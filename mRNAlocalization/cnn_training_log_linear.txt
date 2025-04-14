@@ -1,1 +1,143 @@
 fold 1 (CNN_Linear Training)
+Epoch 1/20, Train Loss: 0.52927, Val Loss: 0.52115
+Best model for fold 1 saved with Val Loss: 0.52115
+Epoch 2/20, Train Loss: 0.47258, Val Loss: 0.46459
+Best model for fold 1 saved with Val Loss: 0.46459
+Epoch 3/20, Train Loss: 0.46107, Val Loss: 0.47074
+Epoch 4/20, Train Loss: 0.45693, Val Loss: 0.47346
+Epoch 5/20, Train Loss: 0.45286, Val Loss: 0.47620
+Epoch 6/20, Train Loss: 0.46785, Val Loss: 0.49187
+Epoch 7/20, Train Loss: 0.46405, Val Loss: 0.49735
+Early Stop Trigger.
+Best model for fold 1 loaded from ./cnn_models_linear/CNN_Linear_model_fold1.pth
+Test Loss: 0.46215
+fold 2 (CNN_Linear Training)
+Epoch 1/20, Train Loss: 0.46268, Val Loss: 0.46522
+Best model for fold 2 saved with Val Loss: 0.46522
+Epoch 2/20, Train Loss: 0.45538, Val Loss: 0.46367
+Best model for fold 2 saved with Val Loss: 0.46367
+Epoch 3/20, Train Loss: 0.45184, Val Loss: 0.46604
+Epoch 4/20, Train Loss: 0.44805, Val Loss: 0.45444
+Best model for fold 2 saved with Val Loss: 0.45444
+Epoch 5/20, Train Loss: 0.44431, Val Loss: 0.45613
+Epoch 6/20, Train Loss: 0.44500, Val Loss: 0.48388
+Epoch 7/20, Train Loss: 0.45086, Val Loss: 0.49063
+Epoch 8/20, Train Loss: 0.44288, Val Loss: 0.46856
+Early Stop Trigger.
+Best model for fold 2 loaded from ./cnn_models_linear/CNN_Linear_model_fold2.pth
+Test Loss: 0.45246
+fold 3 (CNN_Linear Training)
+Epoch 1/20, Train Loss: 0.44721, Val Loss: 0.45959
+Best model for fold 3 saved with Val Loss: 0.45959
+Epoch 2/20, Train Loss: 0.44615, Val Loss: 0.46205
+Epoch 3/20, Train Loss: 0.44217, Val Loss: 0.46928
+Epoch 4/20, Train Loss: 0.44073, Val Loss: 0.47337
+Epoch 5/20, Train Loss: 0.43759, Val Loss: 0.46186
+Epoch 6/20, Train Loss: 0.43490, Val Loss: 0.48471
+Epoch 7/20, Train Loss: 0.43377, Val Loss: 0.49503
+Early Stop Trigger.
+Best model for fold 3 loaded from ./cnn_models_linear/CNN_Linear_model_fold3.pth
+Test Loss: 0.45757
+fold 4 (CNN_Linear Training)
+Epoch 1/20, Train Loss: 0.44631, Val Loss: 0.46870
+Best model for fold 4 saved with Val Loss: 0.46870
+Epoch 2/20, Train Loss: 0.44363, Val Loss: 0.46288
+Best model for fold 4 saved with Val Loss: 0.46288
+Epoch 3/20, Train Loss: 0.44040, Val Loss: 0.49144
+Epoch 4/20, Train Loss: 0.43840, Val Loss: 0.50713
+Epoch 5/20, Train Loss: 0.43608, Val Loss: 0.60399
+Early Stop Trigger.
+Best model for fold 4 loaded from ./cnn_models_linear/CNN_Linear_model_fold4.pth
+Test Loss: 0.46100
+fold 5 (CNN_Linear Training)
+Epoch 1/20, Train Loss: 0.44141, Val Loss: 0.47775
+Best model for fold 5 saved with Val Loss: 0.47775
+Epoch 2/20, Train Loss: 0.43857, Val Loss: 0.47263
+Best model for fold 5 saved with Val Loss: 0.47263
+Epoch 3/20, Train Loss: 0.43565, Val Loss: 0.47394
+Epoch 4/20, Train Loss: 0.43580, Val Loss: 0.48679
+Epoch 5/20, Train Loss: 0.43446, Val Loss: 0.46129
+Best model for fold 5 saved with Val Loss: 0.46129
+Epoch 6/20, Train Loss: 0.43063, Val Loss: 0.46363
+Epoch 7/20, Train Loss: 0.42835, Val Loss: 0.47122
+Epoch 8/20, Train Loss: 0.42693, Val Loss: 0.50764
+Epoch 9/20, Train Loss: 0.42402, Val Loss: 0.50352
+Epoch 10/20, Train Loss: 0.42111, Val Loss: 0.48381
+Early Stop Trigger.
+Best model for fold 5 loaded from ./cnn_models_linear/CNN_Linear_model_fold5.pth
+Test Loss: 0.45725
+fold 6 (CNN_Linear Training)
+Epoch 1/20, Train Loss: 0.43393, Val Loss: 0.53532
+Best model for fold 6 saved with Val Loss: 0.53532
+Epoch 2/20, Train Loss: 0.43032, Val Loss: 0.60254
+Epoch 3/20, Train Loss: 0.43092, Val Loss: 0.49992
+Best model for fold 6 saved with Val Loss: 0.49992
+Epoch 4/20, Train Loss: 0.43015, Val Loss: 0.47425
+Best model for fold 6 saved with Val Loss: 0.47425
+Epoch 5/20, Train Loss: 0.42797, Val Loss: 0.50916
+Epoch 6/20, Train Loss: 0.42653, Val Loss: 0.51651
+Epoch 7/20, Train Loss: 0.43325, Val Loss: 0.47682
+Epoch 8/20, Train Loss: 0.43245, Val Loss: 0.48517
+Early Stop Trigger.
+Best model for fold 6 loaded from ./cnn_models_linear/CNN_Linear_model_fold6.pth
+Test Loss: 0.46841
+fold 7 (CNN_Linear Training)
+Epoch 1/20, Train Loss: 0.42943, Val Loss: 0.49239
+Best model for fold 7 saved with Val Loss: 0.49239
+Epoch 2/20, Train Loss: 0.42607, Val Loss: 0.49236
+Best model for fold 7 saved with Val Loss: 0.49236
+Epoch 3/20, Train Loss: 0.42671, Val Loss: 0.49171
+Best model for fold 7 saved with Val Loss: 0.49171
+Epoch 4/20, Train Loss: 0.42160, Val Loss: 0.51352
+Epoch 5/20, Train Loss: 0.41915, Val Loss: 0.50187
+Epoch 6/20, Train Loss: 0.41619, Val Loss: 0.49969
+Epoch 7/20, Train Loss: 0.41220, Val Loss: 0.49915
+Epoch 8/20, Train Loss: 0.41547, Val Loss: 0.49571
+Epoch 9/20, Train Loss: 0.41193, Val Loss: 0.48681
+Best model for fold 7 saved with Val Loss: 0.48681
+Epoch 10/20, Train Loss: 0.41496, Val Loss: 0.48841
+Epoch 11/20, Train Loss: 0.41009, Val Loss: 0.49763
+Epoch 12/20, Train Loss: 0.40612, Val Loss: 0.48990
+Epoch 13/20, Train Loss: 0.40943, Val Loss: 0.46924
+Best model for fold 7 saved with Val Loss: 0.46924
+Epoch 14/20, Train Loss: 0.40443, Val Loss: 0.47996
+Epoch 15/20, Train Loss: 0.40029, Val Loss: 0.47284
+Epoch 16/20, Train Loss: 0.39680, Val Loss: 0.47713
+Epoch 17/20, Train Loss: 0.39177, Val Loss: 0.46563
+Best model for fold 7 saved with Val Loss: 0.46563
+Epoch 18/20, Train Loss: 0.39050, Val Loss: 0.46256
+Best model for fold 7 saved with Val Loss: 0.46256
+Epoch 19/20, Train Loss: 0.38383, Val Loss: 0.47105
+Epoch 20/20, Train Loss: 0.38005, Val Loss: 0.48994
+Best model for fold 7 loaded from ./cnn_models_linear/CNN_Linear_model_fold7.pth
+Test Loss: 0.45664
+fold 8 (CNN_Linear Training)
+Epoch 1/20, Train Loss: 0.40649, Val Loss: 0.47326
+Best model for fold 8 saved with Val Loss: 0.47326
+Epoch 2/20, Train Loss: 0.40752, Val Loss: 0.47472
+Epoch 3/20, Train Loss: 0.40129, Val Loss: 0.48423
+Epoch 4/20, Train Loss: 0.39379, Val Loss: 0.48772
+Epoch 5/20, Train Loss: 0.38494, Val Loss: 0.46596
+Best model for fold 8 saved with Val Loss: 0.46596
+Epoch 6/20, Train Loss: 0.38074, Val Loss: 0.46502
+Best model for fold 8 saved with Val Loss: 0.46502
+Epoch 7/20, Train Loss: 0.37547, Val Loss: 0.46893
+Epoch 8/20, Train Loss: 0.37186, Val Loss: 0.46557
+Epoch 9/20, Train Loss: 0.36724, Val Loss: 0.46781
+Epoch 10/20, Train Loss: 0.36210, Val Loss: 0.46567
+Epoch 11/20, Train Loss: 0.37107, Val Loss: 0.47091
+Epoch 12/20, Train Loss: 0.40551, Val Loss: 0.46536
+Epoch 13/20, Train Loss: 0.38614, Val Loss: 0.47637
+Epoch 14/20, Train Loss: 0.38314, Val Loss: 0.46928
+Epoch 15/20, Train Loss: 0.37423, Val Loss: 0.47934
+Epoch 16/20, Train Loss: 0.36693, Val Loss: 0.49453
+Early Stop Trigger.
+Best model for fold 8 loaded from ./cnn_models_linear/CNN_Linear_model_fold8.pth
+Test Loss: 0.44798
+Class 1 - Best MCC: 0.23525 at Threshold: 0.60
+Class 2 - Best MCC: 0.04221 at Threshold: 0.97
+Class 3 - Best MCC: 0.14064 at Threshold: 0.22
+Class 4 - Best MCC: 0.24116 at Threshold: 0.48
+Class 5 - Best MCC: 0.14070 at Threshold: 0.26
+Class 6 - Best MCC: 0.20591 at Threshold: 0.23
+Class 7 - Best MCC: 0.06069 at Threshold: 0.15

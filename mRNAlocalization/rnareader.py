@@ -24,7 +24,9 @@ DATA_FILE = DATA_PATH + "modified_multilabel_seq_nonredundent.fasta"
 
 CNN_EPOCHS = 20
 # Update the THRESHOLD global variable with class-specific thresholds
-THRESHOLD = [0.63, 0.98, 0.16, 0.49, 0.29, 0.22, 0.11]
+
+#THRESHOLD = [0.60, 0.97, 0.22, 0.48, 0.26, 0.23, 0.15] #CNN LINEAR
+THRESHOLD = [0.59, 0.73, 0.16, 0.51, 0.36, 0.25, 0.18] #CNN MEAN
 
 encoding_seq = OrderedDict([
 	('A', [1, 0, 0, 0]),
@@ -348,6 +350,8 @@ def preprocess_data_onehot(left=3999, right=3999, k_fold=8):
 			# Pad sequences
 			seq_left = seq_left.ljust(left, '-')
 			seq_right = seq_right.rjust(right, '-')
+			seq_left = ''.join([c if c in seq_encoding_keys else 'N' for c in seq_left])
+			seq_right = ''.join([c if c in seq_encoding_keys else 'N' for c in seq_right])
 			# One-hot encode
 			one_hot_left = [seq_encoding_vectors[seq_encoding_keys.index(c)] for c in seq_left]
 			one_hot_right = [seq_encoding_vectors[seq_encoding_keys.index(c)] for c in seq_right]
@@ -367,6 +371,8 @@ def preprocess_data_onehot(left=3999, right=3999, k_fold=8):
 			# Pad sequences
 			seq_left = seq_left.ljust(left, '-')
 			seq_right = seq_right.rjust(right, '-')
+			seq_left = ''.join([c if c in seq_encoding_keys else 'N' for c in seq_left])
+			seq_right = ''.join([c if c in seq_encoding_keys else 'N' for c in seq_right])
 			# One-hot encode
 			one_hot_left = [seq_encoding_vectors[seq_encoding_keys.index(c)] for c in seq_left]
 			one_hot_right = [seq_encoding_vectors[seq_encoding_keys.index(c)] for c in seq_right]
@@ -386,6 +392,8 @@ def preprocess_data_onehot(left=3999, right=3999, k_fold=8):
 			# Pad sequences
 			seq_left = seq_left.ljust(left, '-')
 			seq_right = seq_right.rjust(right, '-')
+			seq_left = ''.join([c if c in seq_encoding_keys else 'N' for c in seq_left])
+			seq_right = ''.join([c if c in seq_encoding_keys else 'N' for c in seq_right])
 			# One-hot encode
 			one_hot_left = [seq_encoding_vectors[seq_encoding_keys.index(c)] for c in seq_left]
 			one_hot_right = [seq_encoding_vectors[seq_encoding_keys.index(c)] for c in seq_right]
@@ -602,7 +610,7 @@ def train_model(model, mname, X_train, Y_train, X_test, Y_test, X_val,
 			plt.title(f"Class {class_idx + 1} Average Metrics vs Threshold")
 			plt.legend()
 			plt.grid()
-			plt.savefig(os.path.join(f"./plots", f"class_{class_idx + 1}_average_metrics_vs_threshold.png"))
+			plt.savefig(os.path.join(f"./plots", f"{mname}_class_{class_idx + 1}_average_metrics_vs_threshold.png"))
 			plt.close()
 
 	return
@@ -622,7 +630,6 @@ def test_model(model_path, result_file="result.txt", k_fold=5):
 	overall_metrics = {"AUC-ROC": np.zeros(Y_test[0].shape[1]),
 					   "AUC-PR": np.zeros(Y_test[0].shape[1]),
 					   "MCC": np.zeros(Y_test[0].shape[1])}
-	thresholds = np.linspace(0, 1, 101)
 
 	# Open the result file
 	with open(result_file, "w") as log:
@@ -792,9 +799,9 @@ def optimize_thresholds_and_plot(model, test_loader, class_count, save_path="./p
 	return metrics
 
 if __name__ == "__main__":
-	#model_path = ["cnn_models_linear"]
-	#test_model(model_path[0], result_file="./cnn_models_linear/result.txt", k_fold=5)
-	#exit()
+	model_path = ["cnn_models_mean"]
+	test_model(model_path[0], result_file="./cnn_models_mean/result.txt", k_fold=5)
+	exit()
 
 	# Load data for CNN
 	if os.path.exists("cnn_embeddings.pth"):
@@ -869,40 +876,25 @@ if __name__ == "__main__":
 	)
 	
 	### Initialize CNN model with mean pooling
-	##cnn_model_mean = MultiscaleCNNModel(
-	##	layers=cnn_layers,
-	##	num_classes=7,
-	##	sequence_length=15,  # Adjust based on your sequence length
-	##	aggregation_method="mean"
-	##).to(DEVICE)
-
-	## Initialize CNN model with learnable weights
-	cnn_model_linear = MultiscaleCNNModel(
+	cnn_model_mean = MultiscaleCNNModel(
 		layers=cnn_layers,
 		num_classes=7,
 		sequence_length=15,  # Adjust based on your sequence length
-		aggregation_method="learnable_linear"
+		aggregation_method="mean"
 	).to(DEVICE)
 
+	## Initialize CNN model with learnable weights
+	#cnn_model_linear = MultiscaleCNNModel(
+	#	layers=cnn_layers,
+	#	num_classes=7,
+	#	sequence_length=15,  # Adjust based on your sequence length
+	#	aggregation_method="learnable_linear"
+	#).to(DEVICE)
+
 	#### Train CNN model with mean pooling
-	##train_model(
-	##	model=cnn_model_mean,
-	##	mname="CNN_Mean",
-	##	X_train=X_train_cnn,
-	##	Y_train=Y_train_cnn,
-	##	X_test=X_test_cnn,
-	##	Y_test=Y_test_cnn,
-	##	X_val=X_val_cnn,
-	##	Y_val=Y_val_cnn,
-	##	batch_size=32,
-	##	epochs=CNN_EPOCHS,
-	##	save_path="./cnn_models_mean",
-	##	log_file="cnn_training_log_mean.txt"
-	##)
-	
 	train_model(
-		model=cnn_model_linear,
-		mname="CNN_Linear",
+		model=cnn_model_mean,
+		mname="CNN_Mean",
 		X_train=X_train_cnn,
 		Y_train=Y_train_cnn,
 		X_test=X_test_cnn,
@@ -911,9 +903,24 @@ if __name__ == "__main__":
 		Y_val=Y_val_cnn,
 		batch_size=32,
 		epochs=CNN_EPOCHS,
-		save_path="./cnn_models_linear",
-		log_file="cnn_training_log_linear.txt"
+		save_path="./cnn_models_mean",
+		log_file="cnn_training_log_mean.txt"
 	)
+	
+	#train_model(
+	#	model=cnn_model_linear,
+	#	mname="CNN_Linear",
+	#	X_train=X_train_cnn,
+	#	Y_train=Y_train_cnn,
+	#	X_test=X_test_cnn,
+	#	Y_test=Y_test_cnn,
+	#	X_val=X_val_cnn,
+	#	Y_val=Y_val_cnn,
+	#	batch_size=32,
+	#	epochs=CNN_EPOCHS,
+	#	save_path="./cnn_models_linear",
+	#	log_file="cnn_training_log_linear.txt"
+	#)
 
 	#### Initialize LLM model
 	###llm_model = LLMClassifier(

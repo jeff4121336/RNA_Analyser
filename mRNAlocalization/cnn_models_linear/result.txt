@@ -1,0 +1,91 @@
+Evaluating models in path: cnn_models_linear
+Using 5-fold cross-validation
+
+Evaluating model over k-folds: CNN_Linear_model_fold4.pth
+Metrics for model: CNN_Linear_model_fold4.pth
+Class 1 - AUC-ROC: 0.67785, AUC-PR: 0.81438, MCC: 0.23137
+Class 2 - AUC-ROC: 0.62860, AUC-PR: 0.99495, MCC: 0.03083
+Class 3 - AUC-ROC: 0.65581, AUC-PR: 0.21908, MCC: 0.14567
+Class 4 - AUC-ROC: 0.67790, AUC-PR: 0.71746, MCC: 0.26178
+Class 5 - AUC-ROC: 0.62691, AUC-PR: 0.41541, MCC: 0.16917
+Class 6 - AUC-ROC: 0.69587, AUC-PR: 0.36283, MCC: 0.21537
+Class 7 - AUC-ROC: 0.58815, AUC-PR: 0.15847, MCC: 0.07392
+
+Evaluating model over k-folds: CNN_Linear_model_fold6.pth
+Metrics for model: CNN_Linear_model_fold6.pth
+Class 1 - AUC-ROC: 0.68508, AUC-PR: 0.82137, MCC: 0.24704
+Class 2 - AUC-ROC: 0.67025, AUC-PR: 0.99579, MCC: 0.01669
+Class 3 - AUC-ROC: 0.66785, AUC-PR: 0.23666, MCC: 0.16289
+Class 4 - AUC-ROC: 0.67369, AUC-PR: 0.71376, MCC: 0.24984
+Class 5 - AUC-ROC: 0.61192, AUC-PR: 0.38991, MCC: 0.06363
+Class 6 - AUC-ROC: 0.69624, AUC-PR: 0.35806, MCC: 0.22950
+Class 7 - AUC-ROC: 0.59394, AUC-PR: 0.15706, MCC: 0.04891
+
+Evaluating model over k-folds: CNN_Linear_model_fold5.pth
+Metrics for model: CNN_Linear_model_fold5.pth
+Class 1 - AUC-ROC: 0.66536, AUC-PR: 0.80759, MCC: 0.21277
+Class 2 - AUC-ROC: 0.67824, AUC-PR: 0.99574, MCC: 0.04484
+Class 3 - AUC-ROC: 0.66495, AUC-PR: 0.23216, MCC: 0.16307
+Class 4 - AUC-ROC: 0.65646, AUC-PR: 0.69681, MCC: 0.21563
+Class 5 - AUC-ROC: 0.62082, AUC-PR: 0.41301, MCC: 0.15224
+Class 6 - AUC-ROC: 0.69271, AUC-PR: 0.35249, MCC: 0.20489
+Class 7 - AUC-ROC: 0.58628, AUC-PR: 0.15609, MCC: 0.08185
+
+Evaluating model over k-folds: CNN_Linear_model_fold7.pth
+Metrics for model: CNN_Linear_model_fold7.pth
+Class 1 - AUC-ROC: 0.71679, AUC-PR: 0.83789, MCC: 0.30472
+Class 2 - AUC-ROC: 0.75861, AUC-PR: 0.99745, MCC: 0.06865
+Class 3 - AUC-ROC: 0.66882, AUC-PR: 0.25929, MCC: 0.17121
+Class 4 - AUC-ROC: 0.69403, AUC-PR: 0.73063, MCC: 0.27761
+Class 5 - AUC-ROC: 0.66631, AUC-PR: 0.44637, MCC: 0.14503
+Class 6 - AUC-ROC: 0.70791, AUC-PR: 0.37729, MCC: 0.26477
+Class 7 - AUC-ROC: 0.62093, AUC-PR: 0.18694, MCC: 0.09056
+
+Evaluating model over k-folds: CNN_Linear_model_fold3.pth
+Metrics for model: CNN_Linear_model_fold3.pth
+Class 1 - AUC-ROC: 0.68140, AUC-PR: 0.81850, MCC: 0.23708
+Class 2 - AUC-ROC: 0.65282, AUC-PR: 0.99530, MCC: 0.04375
+Class 3 - AUC-ROC: 0.64307, AUC-PR: 0.20469, MCC: 0.13921
+Class 4 - AUC-ROC: 0.67338, AUC-PR: 0.71296, MCC: 0.24952
+Class 5 - AUC-ROC: 0.64085, AUC-PR: 0.42651, MCC: 0.17448
+Class 6 - AUC-ROC: 0.67623, AUC-PR: 0.31932, MCC: 0.18841
+Class 7 - AUC-ROC: 0.58213, AUC-PR: 0.15233, MCC: 0.07453
+
+Evaluating model over k-folds: CNN_Linear_model_fold8.pth
+Metrics for model: CNN_Linear_model_fold8.pth
+Class 1 - AUC-ROC: 0.70867, AUC-PR: 0.83339, MCC: 0.28835
+Class 2 - AUC-ROC: 0.76840, AUC-PR: 0.99752, MCC: 0.06877
+Class 3 - AUC-ROC: 0.66345, AUC-PR: 0.24548, MCC: 0.16747
+Class 4 - AUC-ROC: 0.69042, AUC-PR: 0.72694, MCC: 0.27864
+Class 5 - AUC-ROC: 0.65512, AUC-PR: 0.43315, MCC: 0.18417
+Class 6 - AUC-ROC: 0.70119, AUC-PR: 0.36460, MCC: 0.24826
+Class 7 - AUC-ROC: 0.62359, AUC-PR: 0.18068, MCC: 0.11148
+
+Evaluating model over k-folds: CNN_Linear_model_fold2.pth
+Metrics for model: CNN_Linear_model_fold2.pth
+Class 1 - AUC-ROC: 0.66715, AUC-PR: 0.80556, MCC: 0.22623
+Class 2 - AUC-ROC: 0.64219, AUC-PR: 0.99531, MCC: 0.03830
+Class 3 - AUC-ROC: 0.64210, AUC-PR: 0.20921, MCC: 0.14230
+Class 4 - AUC-ROC: 0.66920, AUC-PR: 0.70521, MCC: 0.23340
+Class 5 - AUC-ROC: 0.62895, AUC-PR: 0.42093, MCC: 0.14163
+Class 6 - AUC-ROC: 0.67996, AUC-PR: 0.33611, MCC: 0.21015
+Class 7 - AUC-ROC: 0.57512, AUC-PR: 0.14194, MCC: 0.07616
+
+Evaluating model over k-folds: CNN_Linear_model_fold1.pth
+Metrics for model: CNN_Linear_model_fold1.pth
+Class 1 - AUC-ROC: 0.63815, AUC-PR: 0.78560, MCC: 0.17564
+Class 2 - AUC-ROC: 0.65305, AUC-PR: 0.99551, MCC: 0.03949
+Class 3 - AUC-ROC: 0.63226, AUC-PR: 0.20162, MCC: 0.12985
+Class 4 - AUC-ROC: 0.63360, AUC-PR: 0.67200, MCC: 0.18486
+Class 5 - AUC-ROC: 0.57465, AUC-PR: 0.36442, MCC: 0.03718
+Class 6 - AUC-ROC: 0.65423, AUC-PR: 0.30574, MCC: 0.18169
+Class 7 - AUC-ROC: 0.53659, AUC-PR: 0.12542, MCC: 0.03050
+
+Overall Average Metrics Across All Models:
+Class 1 - AUC-ROC: 0.68006, AUC-PR: 0.81554, MCC: 0.24040
+Class 2 - AUC-ROC: 0.68152, AUC-PR: 0.99595, MCC: 0.04391
+Class 3 - AUC-ROC: 0.65479, AUC-PR: 0.22603, MCC: 0.15271
+Class 4 - AUC-ROC: 0.67109, AUC-PR: 0.70947, MCC: 0.24391
+Class 5 - AUC-ROC: 0.62819, AUC-PR: 0.41371, MCC: 0.13344
+Class 6 - AUC-ROC: 0.68804, AUC-PR: 0.34706, MCC: 0.21788
+Class 7 - AUC-ROC: 0.58834, AUC-PR: 0.15737, MCC: 0.07349
