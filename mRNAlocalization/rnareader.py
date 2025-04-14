@@ -418,7 +418,7 @@ def preprocess_data_raw_with_embeddings(left=3999, right=3999):
 	Y_train, Y_test, Y_val = {}, {}, {}
 
 	# Initialize mRNA_FM model
-	mrna_fm = mRNA_FM()
+	mrna_fm = RNA_FM()
 
 	for i in tqdm(range(len(Train))):  # Fold num
 		tqdm.write(f"Preparing raw data and generating embeddings for fold {i+1}")
