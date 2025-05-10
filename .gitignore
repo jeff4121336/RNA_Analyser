@@ -1,2 +1,4 @@
 mRNAlocalization/*.pth
+mRNAlocalization/*/*.pth
 __pycache__/
+.DS_Store

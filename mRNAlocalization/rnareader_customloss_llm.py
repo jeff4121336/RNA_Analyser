@@ -9,6 +9,7 @@ import torch.nn.functional as F
 from collections import OrderedDict
 import torch.optim as optim
 import os
+import matplotlib.pyplot as plt
 
 from gene_data import Genedata
 from hier_attention_mask import AttentionMask
@@ -22,12 +23,11 @@ DATA_PATH = "./data/"
 DATA_FILE = DATA_PATH + "modified_multilabel_seq_nonredundent.fasta"
 #DATA_FILE = DATA_PATH + "test.fasta"
 
-CNN_EPOCHS = 30
+EPOCHS = 100
+# Update the THRESHOLD global variable with class-specific thresholds
 
-#THRESHOLD = [0.67, 0.98, 0.14, 0.50, 0.32, 0.17, 0.19] #CNN LINEAR
-#THRESHOLD = [0.55 ,0.99 ,0.10 ,0.44 ,0.24 ,0.21 ,0.14] #CNN MEAN
-#THERSHOLD = [0.64, 0.98, 0.15, 0.57, 0.35, 0.25, 0.13] # LLM
-THERSHOLD = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5] # LLM
+THRESHOLD = [0.59, 0.98, 0.16, 0.52, 0.30, 0.25, 0.12] #CNN LINEAR MODIFIED LOSS
+#THRESHOLD = [0.59, 0.99, 0.14, 0.50, 0.24, 0.22, 0.08] #CNN MEAN MODIFIED LOSS
 
 encoding_seq = OrderedDict([
 	('A', [1, 0, 0, 0]),
@@ -38,8 +38,37 @@ encoding_seq = OrderedDict([
 	('-', [0, 0, 0, 0]),  # Pad
 ])
 
+class StableFocalLoss(torch.nn.Module):
+	def __init__(self, alpha, gamma, omega, reduction='sum'):
+		super().__init__()
+		self.alpha = alpha  # Tensor of shape [N_classes]
+		self.gamma = gamma  # Scalar
+		self.omega = omega  # Tensor of shape [N_classes]
+		self.reduction = reduction
+
+	def forward(self, logits, targets):
+		# Logit-adjusted focal loss (numerically stable)
+		bce_loss = F.binary_cross_entropy_with_logits(
+			logits, targets, reduction='none'
+		)  # Shape: [batch_size, N_classes]
+
+		probs = torch.sigmoid(logits)
+		p_t = torch.where(targets == 1, probs, 1 - probs)
+		modulating_factor = (1 - p_t) ** self.gamma
+
+		# Apply class weights (alpha) and category weights (omega)
+		loss = modulating_factor * bce_loss
+		loss = loss * self.alpha * self.omega  # Element-wise multiplication
+
+		if self.reduction == 'sum':
+			return loss.sum()
+		elif self.reduction == 'mean':
+			return loss.mean()
+		else:
+			return loss
+
 class EarlyStopper:
-	def __init__(self, patience=5, min_delta=0.05):
+	def __init__(self, patience=3, min_delta=0.05):
 		self.patience = patience
 		self.min_delta = min_delta
 		self.counter = 0
@@ -74,7 +103,7 @@ class RNA_FM:
 		all_embeddings = []
 		self.model = self.model.to(DEVICE)
 
-		for label, sequence in tqdm(data, desc="Generating embeddings", unit="sequence"):
+		for label, sequence in data:
 			chunks = [
 				sequence[i:i + self.max_length]
 				for i in range(0, len(sequence), self.max_length)
@@ -91,29 +120,28 @@ class RNA_FM:
 				chunk_embeddings.append(chunk_embedding)
 
 			combined_embedding = torch.cat(chunk_embeddings, dim=1)  # Shape: [1, seq_len, 640]
+			combined_embedding = torch.mean(combined_embedding, dim=1)  # Shape: [1, 640]
 			all_embeddings.append(combined_embedding)
-			print(all_embeddings[-1].shape) # [1, 8000, 640]
-			exit()
-
+			
 		# Concatenate all embeddings along the batch dimension
-		return torch.cat(all_embeddings, dim=0)  # Shape: [batch_size, seq_len, 1280]
+		return torch.cat(all_embeddings, dim=0)  # Shape: [batch_size, seq_len, 640]
 			
 class LLMClassifier(nn.Module):
 	def __init__(self, output_dim):
 		super(LLMClassifier, self).__init__()
 		self.output_dim = output_dim
 
-		self.fc1 = nn.Linear(1280, 512)
-		self.fc2 = nn.Linear(512, output_dim)
+		self.fc1 = nn.Linear(640, 64)
+		self.fc2 = nn.Linear(64, output_dim)
 		self.activation = nn.GELU()
-		self.dropout = nn.Dropout(0.15)
+		self.dropout = nn.Dropout(0.1)
 
 	def forward(self, x):
 		x = self.fc1(x)
 		x = self.activation(x)
 		x = self.dropout(x)
 		x = self.fc2(x)
-		return x, 0
+		return x
 
 class MultiscaleCNNLayers(nn.Module):
 	def __init__(self, in_channels, embedding_dim, pooling_size, pooling_stride, drop_rate_cnn, drop_rate_fc, length, nb_classes):
@@ -135,95 +163,58 @@ class MultiscaleCNNLayers(nn.Module):
 		self.dropout_cnn = nn.Dropout(drop_rate_cnn)
 		self.dropout_fc = nn.Dropout(drop_rate_fc)
 
-		self.fc1 = nn.Linear(length // pooling_stride, 7)
-		nn.init.xavier_uniform_(self.fc1.weight)
+		self.fc = nn.Linear(length // pooling_stride, 7)
+
+		nn.init.xavier_uniform_(self.fc.weight)
+
 
 		self.activation = nn.GELU() 
+
 		self.attentionHead = AttentionMask(hidden = (length // pooling_stride) + 1, da = 80, r = 5)
 
 	def forward_cnn(self, x, conv1, conv2, bn1, bn2):
-		#print(x.shape) #torch.Size([32, 4, 8000])
 		x = conv1(x)
-		#print(x.shape) #torch.Size([32, 64, 8000])
 		x = self.activation(bn1(x))
-		#print(x.shape) #torch.Size([32, 64, 8000])
 		x = conv2(x)
-		#print(x.shape) #torch.Size([32, 32, 8000])
 		x = self.activation(bn2(x))
-		#print(x.shape) #torch.Size([32, 32, 8000])
 		x = self.pool(x)
-		#print(x.shape) #torch.Size([32, 32, 1000])
 		x, regulatization_loss, att_map = self.attentionHead(x)
-		#print(x.shape) #torch.Size([32, 5, 999])
 		x = self.dropout_cnn(x)
 		return x, regulatization_loss
-		#return x, regulatization_loss, att_map
 	
 class MultiscaleCNNModel(nn.Module):
-	def __init__(self, layers, num_classes, sequence_length, aggregation_method="mean"):
+	def __init__(self, layers, num_classes, sequence_length, aggregation_method="learnable_linear"):
 		super(MultiscaleCNNModel, self).__init__()
 		self.layers = layers
-		self.aggregation_method = aggregation_method  # "mean" or "learnable_weights"
+		self.aggregation_method = aggregation_method 
 		
 		if aggregation_method == "learnable_linear":
 			self.sequence_aggregator = nn.Linear(sequence_length, 1)
 
 	def forward(self, x):
-		#x = self.dropout(self.fc1(x))
-		#x = self.dropout(self.fc2(x))
-		#x = self.fc3(x)
-		#print(x.shape)
-		#exit()
-		#x = x.permute(0, 2, 1)  # Shape: [batch_size, num_classes, sequence_length]
-		#print(x.shape)
-		# Pass through CNN layers
 		x1, x1_regulatization_loss = self.layers.forward_cnn(x, self.layers.conv1_1, self.layers.conv1_2, self.layers.bn1, self.layers.bn2)
 		x2, x2_regulatization_loss = self.layers.forward_cnn(x, self.layers.conv2_1, self.layers.conv2_2, self.layers.bn1, self.layers.bn2)
 		x3, x3_regulatization_loss = self.layers.forward_cnn(x, self.layers.conv3_1, self.layers.conv3_2, self.layers.bn2, self.layers.bn2)
 		x = torch.cat((x1, x2, x3), dim=1) # [32, 15, 999]
-		x = self.layers.fc1(x) # [32, 15, 7]
+		x = self.layers.dropout_fc(self.layers.fc(x)) # [32, 15, 7]
 
 		if self.aggregation_method == "learnable_linear":
 			x = x.permute(0, 2, 1)  # Shape: [batch_size, 7, 15]
 			x = self.sequence_aggregator(x).squeeze(-1) 
 
 		return x, x1_regulatization_loss + x2_regulatization_loss + x3_regulatization_loss
-	
-#class EnsembleModel(nn.Module):
-#	def __init__(self, llm_model, cnn_model, llm_output_dim, cnn_output_dim, hidden_dim, nb_classes):
-#		super(EnsembleModel, self).__init__()
-#		self.llm_model = llm_model
-#		self.cnn_model = cnn_model
-
-#		# Fully connected NN for combining LLM and CNN outputs and length compoent in second layer
-#		self.fc1 = nn.Linear(llm_output_dim + cnn_output_dim, (llm_output_dim + cnn_output_dim)/ 2 + 1)
-#		self.fc2 = nn.Linear((llm_output_dim + cnn_output_dim)/ 2 + 1, nb_classes)
-#		self.activation = nn.ReLU()
-#		self.dropout = nn.Dropout(0.2)
-	
-#	def forward(self, x):
-#		llm_output = self.llm_model(x) # LLM output
-#		cnn_output = self.cnn_model(x) # CNN output
-
-#		x = torch.cat((llm_output, cnn_output), dim=1) # Combine LLM and CNN outputs
-
-#		x = self.fc1(x)
-#		self.activation(x)
-#		x = self.dropout(x)
-#		x = self.fc2(x)
-
-#		return x
 
 class GeneDataset(Dataset):
-	def __init__(self, sequences, labels):
-		self.sequences = sequences
+	def __init__(self, data, labels):
+		self.data = data
 		self.labels = labels
 
 	def __len__(self):
-		return len(self.sequences)
+		return len(self.data)
 
 	def __getitem__(self, idx):
-		return self.sequences[idx], self.labels[idx]
+		combined_sequence, rnafm_embedding, one_hot_encoding = self.data[idx]
+		return combined_sequence, rnafm_embedding, one_hot_encoding, self.labels[idx]
 	
 def get_id_label_seq_Dict(gene_data):
 #	{
@@ -272,12 +263,9 @@ def group_sample(label_id_Dict,datasetfolder,foldnum=8):
 			Train[i].extend(train_fold_ids[i])
 			Val[i].extend(val_fold_ids[i])
 			Test[i].extend(test_fold_ids[i])
-			#print('label:%s finished sampling! Train length: %s, Test length: %s, Val length:%s'%(eachkey, len(train_fold_ids[i]), len(test_fold_ids[i]),len(val_fold_ids[i])))
 	
 	for i in range(foldnum):
 		print('Train length: %s, Test length: %s, Val length: %s'%(len(Train[i]),len(Test[i]),len(Val[i])))
-		#print(type(Train[i]))
-		#print(Train[0][:foldnum])
 		np.savetxt(datasetfolder+'/Train'+str(i)+'.txt', np.asarray(Train[i]),fmt="%s")
 		np.savetxt(datasetfolder+'/Test'+str(i)+'.txt', np.asarray(Test[i]),fmt="%s")
 		np.savetxt(datasetfolder+'/Val'+str(i)+'.txt', np.asarray(Val[i]),fmt="%s")
@@ -312,11 +300,10 @@ def KFoldSampling(ids, k):
 def label_dist(dist):
 	return [int(x) for x in dist]
 
-def preprocess_data_onehot(left=3999, right=3999, k_fold=8):
-	# Prepare data
+def preprocess_data(left=3999, right=3999, k_fold=8, test_only=False):
 	data = Genedata.load_sequence(
 		dataset=DATA_FILE,
-		left=left, # divsible by 3
+		left=left,
 		right=right,
 		predict=False,
 	)
@@ -326,140 +313,142 @@ def preprocess_data_onehot(left=3999, right=3999, k_fold=8):
 
 	X_train, X_test, X_val = {}, {}, {}
 	Y_train, Y_test, Y_val = {}, {}, {}
-	for i in tqdm(range(len(Train))):  # Fold num
-		tqdm.write(f"Padding and Indexing data for fold {i+1} (One-Hot Encoding)")
-		seq_encoding_keys = list(encoding_seq.keys())
-		seq_encoding_vectors = np.array(list(encoding_seq.values()))
+
+	# Initialize RNA-FM model
+	rna_fm = RNA_FM()
+
+	if test_only:
+		for i in tqdm(range(len(Test)), desc="Processing Test-Only Folds"):  # Fold num
+			tqdm.write(f"Processing data for test-only fold {i+1} (One-Hot Encoding and RNA-FM Embeddings)")
+			# Test data
+			X_test[i] = []
+			for id in tqdm(Test[i], desc=f"Processing Test Data for Fold {i+1}"):
+				seq_left = list(id_label_seq_dict[id].values())[0][0]
+				seq_right = list(id_label_seq_dict[id].values())[0][1]
+				# Pad sequences
+				seq_left = seq_left.ljust(left, '-')
+				seq_right = seq_right.rjust(right, '-')
+				seq_left = ''.join([c if c in encoding_seq.keys() else 'N' for c in seq_left])
+				seq_right = ''.join([c if c in encoding_seq.keys() else 'N' for c in seq_right])
+				# Combine sequences
+				combined_sequence = seq_left + seq_right
+				# RNA-FM embedding
+				rnafm_embedding = rna_fm.embeddings([(id, combined_sequence)])
+				# One-hot encoding
+				one_hot_left = [encoding_seq[c] for c in seq_left]
+				one_hot_right = [encoding_seq[c] for c in seq_right]
+				one_hot_combined = np.array(one_hot_left + one_hot_right).T
+				# Append combined sequence, RNA-FM embedding, and one-hot encoding
+				X_test[i].append((combined_sequence, rnafm_embedding, one_hot_combined))
+			Y_test[i] = torch.tensor([label_dist(list(id_label_seq_dict[id].keys())[0]) for id in Test[i]], dtype=torch.float32)
+		return X_test, Y_test
+	
+	for i in tqdm(range(len(Train)), desc="Processing Folds"):  # Fold num
+		tqdm.write(f"Processing data for fold {i+1} (One-Hot Encoding and RNA-FM Embeddings)")
 
 		# Train data
 		X_train[i] = []
-		for id in Train[i]:
+		for id in tqdm(Train[i], desc=f"Processing Train Data for Fold {i+1}"):
 			seq_left = list(id_label_seq_dict[id].values())[0][0]
 			seq_right = list(id_label_seq_dict[id].values())[0][1]
 			# Pad sequences
 			seq_left = seq_left.ljust(left, '-')
 			seq_right = seq_right.rjust(right, '-')
-			seq_left = ''.join([c if c in seq_encoding_keys else 'N' for c in seq_left])
-			seq_right = ''.join([c if c in seq_encoding_keys else 'N' for c in seq_right])
-			# One-hot encode
-			one_hot_left = [seq_encoding_vectors[seq_encoding_keys.index(c)] for c in seq_left]
-			one_hot_right = [seq_encoding_vectors[seq_encoding_keys.index(c)] for c in seq_right]
-			# Combine left and right
-			combined = np.concatenate([one_hot_left, one_hot_right], axis=0)
-			X_train[i].append(combined)
-
-		# Convert list of NumPy arrays to a single NumPy array, then to a PyTorch tensor
-		X_train[i] = torch.tensor(np.array(X_train[i]), dtype=torch.float32).permute(0, 2, 1)
+			seq_left = ''.join([c if c in encoding_seq.keys() else 'N' for c in seq_left])
+			seq_right = ''.join([c if c in encoding_seq.keys() else 'N' for c in seq_right])
+			# Combine sequences
+			combined_sequence = seq_left + seq_right
+			# RNA-FM embedding
+			rnafm_embedding = rna_fm.embeddings([(id, combined_sequence)])
+			# One-hot encoding
+			one_hot_left = [encoding_seq[c] for c in seq_left]
+			one_hot_right = [encoding_seq[c] for c in seq_right]
+			one_hot_combined = np.array(one_hot_left + one_hot_right).T  # Shape: [4, seq_len]
+			# Append combined sequence, RNA-FM embedding, and one-hot encoding
+			X_train[i].append((combined_sequence, rnafm_embedding, one_hot_combined))
+			
 		Y_train[i] = torch.tensor([label_dist(list(id_label_seq_dict[id].keys())[0]) for id in Train[i]], dtype=torch.float32)
 
 		# Test data
 		X_test[i] = []
-		for id in Test[i]:
+		for id in tqdm(Test[i], desc=f"Processing Test Data for Fold {i+1}"):
 			seq_left = list(id_label_seq_dict[id].values())[0][0]
 			seq_right = list(id_label_seq_dict[id].values())[0][1]
 			# Pad sequences
 			seq_left = seq_left.ljust(left, '-')
 			seq_right = seq_right.rjust(right, '-')
-			seq_left = ''.join([c if c in seq_encoding_keys else 'N' for c in seq_left])
-			seq_right = ''.join([c if c in seq_encoding_keys else 'N' for c in seq_right])
-			# One-hot encode
-			one_hot_left = [seq_encoding_vectors[seq_encoding_keys.index(c)] for c in seq_left]
-			one_hot_right = [seq_encoding_vectors[seq_encoding_keys.index(c)] for c in seq_right]
-			# Combine left and right
-			combined = np.concatenate([one_hot_left, one_hot_right], axis=0)
-			X_test[i].append(combined)
+			seq_left = ''.join([c if c in encoding_seq.keys() else 'N' for c in seq_left])
+			seq_right = ''.join([c if c in encoding_seq.keys() else 'N' for c in seq_right])
+			# Combine sequences
+			combined_sequence = seq_left + seq_right
+			# RNA-FM embedding
+			rnafm_embedding = rna_fm.embeddings([(id, combined_sequence)])
+			# One-hot encoding
+			one_hot_left = [encoding_seq[c] for c in seq_left]
+			one_hot_right = [encoding_seq[c] for c in seq_right]
+			one_hot_combined = np.array(one_hot_left + one_hot_right).T  # Shape: [4, seq_len]
+			# Append combined sequence, RNA-FM embedding, and one-hot encoding
+			X_test[i].append((combined_sequence, rnafm_embedding, one_hot_combined))
 
-		# Convert list of NumPy arrays to a single NumPy array, then to a PyTorch tensor
-		X_test[i] = torch.tensor(np.array(X_test[i]), dtype=torch.float32).permute(0, 2, 1)
 		Y_test[i] = torch.tensor([label_dist(list(id_label_seq_dict[id].keys())[0]) for id in Test[i]], dtype=torch.float32)
 
 		# Validation data
 		X_val[i] = []
-		for id in Val[i]:
+		for id in tqdm(Val[i], desc=f"Processing Validation Data for Fold {i+1}"):
 			seq_left = list(id_label_seq_dict[id].values())[0][0]
 			seq_right = list(id_label_seq_dict[id].values())[0][1]
 			# Pad sequences
 			seq_left = seq_left.ljust(left, '-')
 			seq_right = seq_right.rjust(right, '-')
-			seq_left = ''.join([c if c in seq_encoding_keys else 'N' for c in seq_left])
-			seq_right = ''.join([c if c in seq_encoding_keys else 'N' for c in seq_right])
-			# One-hot encode
-			one_hot_left = [seq_encoding_vectors[seq_encoding_keys.index(c)] for c in seq_left]
-			one_hot_right = [seq_encoding_vectors[seq_encoding_keys.index(c)] for c in seq_right]
-			# Combine left and right
-			combined = np.concatenate([one_hot_left, one_hot_right], axis=0)
-			X_val[i].append(combined)
+			seq_left = ''.join([c if c in encoding_seq.keys() else 'N' for c in seq_left])
+			seq_right = ''.join([c if c in encoding_seq.keys() else 'N' for c in seq_right])
+			# Combine sequences
+			combined_sequence = seq_left + seq_right
+			# RNA-FM embedding
+			rnafm_embedding = rna_fm.embeddings([(id, combined_sequence)])
+			# One-hot encoding
+			one_hot_left = [encoding_seq[c] for c in seq_left]
+			one_hot_right = [encoding_seq[c] for c in seq_right]
+			one_hot_combined = np.array(one_hot_left + one_hot_right).T  # Shape: [4, seq_len]
+			# Append combined sequence, RNA-FM embedding, and one-hot encoding
+			X_val[i].append((combined_sequence, rnafm_embedding, one_hot_combined))
 
-		# Convert list of NumPy arrays to a single NumPy array, then to a PyTorch tensor
-		X_val[i] = torch.tensor(np.array(X_val[i]), dtype=torch.float32).permute(0, 2, 1)
-		Y_val[i] = torch.tensor([label_dist(list(id_label_seq_dict[id].keys())[0]) for id in Val[i]], dtype=torch.float32)
-	
-	return X_train, X_test, X_val, Y_train, Y_test, Y_val
-
-def preprocess_data_raw_with_embeddings(left=3999, right=3999):
-	"""
-	Prepare raw data for LLM training and generate embeddings using mRNA_FM.
-	"""
-	# Load raw data
-	data = Genedata.load_sequence(
-		dataset=DATA_FILE,
-		left=left,  # Divisible by 3
-		right=right,
-		predict=False,
-	)
-	id_label_seq_dict = get_id_label_seq_Dict(data)
-	label_id_dict = get_label_id_Dict(id_label_seq_dict)
-	Train, Test, Val = group_sample(label_id_dict, DATA_PATH)
-
-	X_train, X_test, X_val = {}, {}, {}
-	Y_train, Y_test, Y_val = {}, {}, {}
-
-	# Initialize mRNA_FM model
-	mrna_fm = RNA_FM()
-
-	for i in tqdm(range(len(Train))):  # Fold num
-		tqdm.write(f"Preparing raw data and generating embeddings for fold {i+1}")
-
-		# Train data
-		train_data = [
-			(
-				"id_" + str(idx),
-				(list(id_label_seq_dict[id].values())[0][0] + list(id_label_seq_dict[id].values())[0][1])
-			)
-			for idx, id in enumerate(Train[i])
-		]
-		X_train[i] = torch.tensor(mrna_fm.embeddings(train_data).cpu().numpy(), dtype=torch.float32)  # Convert to Tensor
-		Y_train[i] = torch.tensor([label_dist(list(id_label_seq_dict[id].keys())[0]) for id in Train[i]], dtype=torch.float32)
-
-		# Test data
-		test_data = [
-			(
-				"id_" + str(idx),
-				(list(id_label_seq_dict[id].values())[0][0] + list(id_label_seq_dict[id].values())[0][1])
-			)
-			for idx, id in enumerate(Test[i])
-		]
-		X_test[i] = torch.tensor(mrna_fm.embeddings(test_data).cpu().numpy(), dtype=torch.float32)  # Convert to Tensor
-		Y_test[i] = torch.tensor([label_dist(list(id_label_seq_dict[id].keys())[0]) for id in Test[i]], dtype=torch.float32)
-
-		# Validation data
-		val_data = [
-			(
-				"id_" + str(idx),
-				(list(id_label_seq_dict[id].values())[0][0] + list(id_label_seq_dict[id].values())[0][1])
-			)
-			for idx, id in enumerate(Val[i])
-		]
-		X_val[i] = torch.tensor(mrna_fm.embeddings(val_data).cpu().numpy(), dtype=torch.float32)  # Convert to Tensor
 		Y_val[i] = torch.tensor([label_dist(list(id_label_seq_dict[id].keys())[0]) for id in Val[i]], dtype=torch.float32)
 
 	return X_train, X_test, X_val, Y_train, Y_test, Y_val
 
 def train_model(model, mname, X_train, Y_train, X_test, Y_test, X_val,
-				Y_val, batch_size, epochs, lr=0.001, weight_decay=5e-5, save_path="./models", log_file="training_log.txt"):
+				Y_val, batch_size, epochs, lr=0.001, weight_decay=1e-4, save_path="./models", log_file="training_log.txt", load_CNN_model_path=None):
 	""" Train the LLM/CNN model and write logs to a file """
 	model = model.to(DEVICE)
-	criterion = nn.BCEWithLogitsLoss()  # MultiLabel Classification -> Multi Binary Classification
+
+	# Load the CNN model here
+	cnn_model = MultiscaleCNNModel(
+		layers=MultiscaleCNNLayers(
+			in_channels=64,
+			embedding_dim=4,  # For one-hot encoding
+			pooling_size=8,
+			pooling_stride=8,
+			drop_rate_cnn=0.3,
+			drop_rate_fc=0.3,
+			length=7998,  # Length of the input sequence
+			nb_classes=7
+		),
+		num_classes=7,
+		sequence_length=15,
+		aggregation_method="learnable_linear"
+	).to(DEVICE)
+	cnn_model.load_state_dict(torch.load(load_CNN_model_path))
+	cnn_model.eval()
+
+	# Load the RNA-FM model
+	rna_fm = RNA_FM()
+
+	# Replace BCEWithLogitsLoss with StableFocalLoss
+	alpha = torch.tensor([0.42, 0.01, 0.76, 0.64, 0.63, 0.66, 1.0]).to(DEVICE)  # * number of classes (using the EDC paper first, )
+	gamma = 0 # paper value
+	omega = torch.tensor([1.3, 1.0, 0.9, 1.4, 1.2, 1.4, 1.0]).to(DEVICE)  # * number of classes
+	criterion = StableFocalLoss(alpha=alpha, gamma=gamma, omega=omega, reduction='mean')
 	optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
 	
 	os.makedirs(save_path, exist_ok=True)
@@ -470,13 +459,14 @@ def train_model(model, mname, X_train, Y_train, X_test, Y_test, X_val,
 					   "Precision": np.zeros((Y_test[0].shape[1], len(thresholds))),
 					   "Recall": np.zeros((Y_test[0].shape[1], len(thresholds)))}
 
+	
 	# Open the log file
 	with open(log_file, "w") as log:
-		for i in tqdm(range(len(X_train))):  # Fold num
+		for i in tqdm(range(len(X_train)), desc="Training Folds"):  # Fold num
 			log.write(f"fold {i+1} ({mname} Training)\n")
 			tqdm.write(f"fold {i+1} ({mname} Training)")
 			early_stopper = EarlyStopper(patience=3, min_delta=0.05)
-			# Create DataLoaders for preloaded embeddings
+			# Create DataLoaders
 			train_dataset = GeneDataset(X_train[i], Y_train[i])
 			val_dataset = GeneDataset(X_val[i], Y_val[i])
 			test_dataset = GeneDataset(X_test[i], Y_test[i])
@@ -490,11 +480,18 @@ def train_model(model, mname, X_train, Y_train, X_test, Y_test, X_val,
 				# Training step
 				model.train()
 				train_loss = 0
-				for sequences, labels in train_loader:
-					sequences, labels = sequences.to(DEVICE), labels.to(DEVICE).float()
+				for combined_sequence, rnafm_embedding, one_hot_encoding, labels in train_loader:
+					rnafm_embeddings, one_hot_encoding, labels = (
+						rnafm_embedding.to(DEVICE),
+						one_hot_encoding.to(DEVICE).float(),
+						labels.to(DEVICE).float(),
+					)
 					optimizer.zero_grad()
-					outputs, regularization_loss = model(sequences)		
-					loss = criterion(outputs, labels) + regularization_loss  # Add regularization loss
+					with torch.no_grad():
+						cnn_embeddings, _ = cnn_model(one_hot_encoding)
+					# Concatenate CNN embeddings with RNA-FM model output
+					outputs = model(cnn_embeddings, rnafm_embeddings)
+					loss = criterion(outputs, labels)
 					loss.backward()
 					optimizer.step()
 					train_loss += loss.item()
@@ -505,10 +502,17 @@ def train_model(model, mname, X_train, Y_train, X_test, Y_test, X_val,
 				model.eval()
 				with torch.no_grad():
 					val_loss = 0
-					for sequences, labels in val_loader:
-						sequences, labels = sequences.to(DEVICE), labels.to(DEVICE).float()
-						outputs, regularization_loss = model(sequences)
-						loss = criterion(outputs, labels) + regularization_loss
+					for combined_sequence, rnafm_embedding, one_hot_encoding, labels in val_loader:
+						rnafm_embeddings, one_hot_encoding, labels = (
+							rnafm_embedding.to(DEVICE),
+							one_hot_encoding.to(DEVICE).float(),
+							labels.to(DEVICE).float(),
+						)
+						with torch.no_grad():
+							cnn_embeddings, _ = cnn_model(one_hot_encoding)
+						# Concatenate CNN embeddings with RNA-FM model output
+						outputs = model(cnn_embeddings, rnafm_embeddings)
+						loss = criterion(outputs, labels)
 						val_loss += loss.item()
 
 				val_loss /= len(val_loader)
@@ -543,12 +547,20 @@ def train_model(model, mname, X_train, Y_train, X_test, Y_test, X_val,
 			with torch.no_grad():
 				all_labels = []
 				all_outputs = []
-				for sequences, labels in test_loader:
-					sequences, labels = sequences.to(DEVICE), labels.to(DEVICE).float()
-					outputs, regularization_loss = model(sequences)
+				for combined_sequence, rnafm_embedding, one_hot_encoding, labels in test_loader:
+					rnafm_embeddings, one_hot_encoding, labels = (
+						rnafm_embedding.to(DEVICE),
+						one_hot_encoding.to(DEVICE).float(),
+						labels.to(DEVICE).float(),
+					)
+					optimizer.zero_grad()
+					with torch.no_grad():
+						cnn_embeddings, _ = cnn_model(one_hot_encoding)
+					# Concatenate CNN embeddings with RNA-FM model output
+					outputs = model(cnn_embeddings, rnafm_embeddings)
+					loss = criterion(outputs, labels)
 					all_labels.append(labels.cpu().numpy())
 					all_outputs.append(torch.sigmoid(outputs).cpu().numpy())
-					loss = criterion(outputs, labels) + regularization_loss  # Compute test loss
 					test_loss += loss.item()
 
 				test_loss /= len(test_loader)
@@ -604,123 +616,144 @@ def train_model(model, mname, X_train, Y_train, X_test, Y_test, X_val,
 
 	return
 
-def test_model(model_path, result_file="result.txt", k_fold=5):
-	""" Test the LLM/CNN model with k folds and write result to a file """	
-	
-	X_train, X_test, X_val, Y_train, Y_test, Y_val = preprocess_data_onehot(
-		left=4000,
-		right=4000,
-		k_fold=5
-	)
-	
-	model_files = [f for f in os.listdir(model_path) if f.endswith(".pth")]
-	
-	# Initialize arrays to store metrics across all folds
+def test_model(path1, path2, X_test, Y_test, k_fold, batch_size=32, thresholds=None, log_file="test_log.txt"):
+
+	# Load the CNN model n model weights
+	cnn_model = MultiscaleCNNModel(
+		layers=MultiscaleCNNLayers(
+			in_channels=64,
+			embedding_dim=4,  # For one-hot encoding
+			pooling_size=8,
+			pooling_stride=8,
+			drop_rate_cnn=0.3,
+
+			drop_rate_fc=0.3,
+			length=7998,  # Length of the input sequence
+			nb_classes=7
+		),
+		num_classes=7,
+		sequence_length=15,
+		aggregation_method="learnable_linear"
+	).to(DEVICE)
+	cnn_model.load_state_dict(torch.load(path2))
+
+	# Load the combined model n model weights
+	model = CombinedModel(
+		cnn_output_dim=7,
+		llm_output_dim=640,
+		hidden_dim=32,
+		nb_classes=7
+	).to(DEVICE)
+	model.load_state_dict(torch.load(path1), strict=False)
+
+	model.eval()
+	cnn_model.eval()
+
+	# Default thresholds if not provided
+	if thresholds is None:
+		thresholds = [0.5] * Y_test[0].shape[1]  # Default threshold of 0.5 for each class
+
+	# Initialize metrics
 	overall_metrics = {"AUC-ROC": np.zeros(Y_test[0].shape[1]),
 					   "AUC-PR": np.zeros(Y_test[0].shape[1]),
 					   "MCC": np.zeros(Y_test[0].shape[1])}
 
-	# Open the result file
-	with open(result_file, "w") as log:
-		log.write(f"Evaluating models in path: {model_path}\n")
-		log.write(f"Using {k_fold}-fold cross-validation\n\n")
+	with open(log_file, "w") as log:
+		log.write(f"Testing the combined model with {k_fold}-folds:\n")
+		tqdm.write("Testing the combined model:")
 
-		for model_file in model_files:
-			model_file_path = os.path.join(model_path, model_file)
-			log.write(f"Evaluating model over k-folds: {model_file}\n")
-			tqdm.write(f"Evaluating model: {model_file}")
-			
-			#layers = MultiscaleCNNLayers(
-			#	in_channels=64,
-			#	embedding_dim=4,  # For one-hot encoding
-			#	pooling_size=8,
-			#	pooling_stride=8,
-			#	drop_rate_cnn=0.3,
-			#	drop_rate_fc=0.3,
-			#	length=7998, # Length of the input sequence
-			#	nb_classes=7
-			#)
+		for fold_idx in range(len(X_test)):
+			test_dataset = GeneDataset(X_test[fold_idx], Y_test[fold_idx])
+			test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
-			#model = MultiscaleCNNModel(
-			#	layers=layers,
-			#	num_classes=7,
-			#	sequence_length=15, 
-			#	aggregation_method="learnable_linear"
-			#).to(DEVICE)
+			all_labels = []
+			all_outputs = []
 
-			model = LLMClassifier(
-				output_dim=7
-			).to(DEVICE)
+			with torch.no_grad():
+				for combined_sequence, rnafm_embedding, one_hot_encoding, labels in test_loader:
+					# Move data to device
+					rnafm_embedding, one_hot_encoding, labels = (
+						rnafm_embedding.to(DEVICE),
+						one_hot_encoding.to(DEVICE).float(),
+						labels.to(DEVICE).float(),
+					)
 
-			model.load_state_dict(torch.load(model_file_path), strict=False)
-			model.eval()
+					cnn_embeddings, _ = cnn_model(one_hot_encoding)
+					outputs = model(cnn_embeddings, rnafm_embedding)
+					# Store labels and predictions
+					all_labels.append(labels.cpu().numpy())
+					all_outputs.append(torch.sigmoid(outputs).cpu().numpy())
 
-			# Initialize metrics for this model
-			average_metrics = {"AUC-ROC": np.zeros(Y_test[0].shape[1]),
-							   "AUC-PR": np.zeros(Y_test[0].shape[1]),
-							   "MCC": np.zeros(Y_test[0].shape[1])}
+			# Concatenate all labels and outputs
+			all_labels = np.concatenate(all_labels, axis=0)
+			all_outputs = np.concatenate(all_outputs, axis=0)
 
-			for fold in range(k_fold):
-				test_dataset = GeneDataset(X_test[fold], Y_test[fold])
-				test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
-				all_labels = []
-				all_outputs = []
+			# Compute metrics for each class
+			for class_idx in range(all_labels.shape[1]):
+				true_labels = all_labels[:, class_idx]
+				pred_probs = all_outputs[:, class_idx]
 
-				with torch.no_grad():
-					for sequences, labels in test_loader:
-						sequences, labels = sequences.to(DEVICE), labels.to(DEVICE).float()
-						outputs, _ = model(sequences)
-						all_labels.append(labels.cpu().numpy())
-						all_outputs.append(torch.sigmoid(outputs).cpu().numpy())
+				# AUC-ROC
+				aucroc = roc_auc_score(true_labels, pred_probs) if len(np.unique(true_labels)) > 1 else np.nan
+				overall_metrics["AUC-ROC"][class_idx] += aucroc if not np.isnan(aucroc) else 0
+				# AUC-PR
+				aucpr = average_precision_score(true_labels, pred_probs) if len(np.unique(true_labels)) > 1 else np.nan
+				overall_metrics["AUC-PR"][class_idx] += aucpr if not np.isnan(aucpr) else 0
+				# MCC
+				pred_labels = (pred_probs >= thresholds[class_idx]).astype(int)
+				mcc = matthews_corrcoef(true_labels, pred_labels) if len(np.unique(true_labels)) > 1 else np.nan
+				overall_metrics["MCC"][class_idx] += mcc if not np.isnan(mcc) else 0
 
-				all_labels = np.concatenate(all_labels, axis=0)
-				all_outputs = np.concatenate(all_outputs, axis=0) 
-
-				for class_idx in range(all_labels.shape[1]):
-					true_labels = all_labels[:, class_idx]
-					pred_probs = all_outputs[:, class_idx]			
-					# AUC-ROC
-					aucroc = roc_auc_score(true_labels, pred_probs) if len(np.unique(true_labels)) > 1 else np.nan
-					average_metrics["AUC-ROC"][class_idx] += aucroc if not np.isnan(aucroc) else 0
-					# AUC-PR
-					aucpr = average_precision_score(true_labels, pred_probs) if len(np.unique(true_labels)) > 1 else np.nan
-					average_metrics["AUC-PR"][class_idx] += aucpr if not np.isnan(aucpr) else 0
-					# MCC
-					pred_labels = (pred_probs >= THRESHOLD[class_idx]).astype(int)
-					mcc = matthews_corrcoef(true_labels, pred_labels) if len(np.unique(true_labels)) > 1 else np.nan
-					average_metrics["MCC"][class_idx] += mcc if not np.isnan(mcc) else 0
-
-			# Divide by the number of folds to compute the average for this model
-			for key in average_metrics:
-				average_metrics[key] /= k_fold
-			
-			for key in overall_metrics:
-				overall_metrics[key] += average_metrics[key]
-
-			log.write(f"Metrics for model: {model_file}\n")
-			for class_idx in range(Y_test[0].shape[1]):
-				log.write(f"Class {class_idx + 1} - AUC-ROC: {average_metrics['AUC-ROC'][class_idx]:.5f}, "
-						  f"AUC-PR: {average_metrics['AUC-PR'][class_idx]:.5f}, "
-						  f"MCC: {average_metrics['MCC'][class_idx]:.5f}\n")
-			log.write("\n")
-
-		# After processing all folds, divide by total folds to get the final average
+		# Average metrics across folds
 		for key in overall_metrics:
-			overall_metrics[key] /= len(model_files)
+			overall_metrics[key] /= len(X_test)
 
-		# Log the overall average metrics
-		log.write("Overall Average Metrics Across All Models:\n")
-		tqdm.write("Overall Average Metrics Across All Models:")
+		# Log metrics
+		log.write("Overall Metrics:\n")
+		tqdm.write("Overall Metrics:")
 		for class_idx in range(Y_test[0].shape[1]):
 			log.write(f"Class {class_idx + 1} - AUC-ROC: {overall_metrics['AUC-ROC'][class_idx]:.5f}, "
-					f"AUC-PR: {overall_metrics['AUC-PR'][class_idx]:.5f}, "
-					f"MCC: {overall_metrics['MCC'][class_idx]:.5f}\n")
+					  f"AUC-PR: {overall_metrics['AUC-PR'][class_idx]:.5f}, "
+					  f"MCC: {overall_metrics['MCC'][class_idx]:.5f}\n")
 			tqdm.write(f"Class {class_idx + 1} - AUC-ROC: {overall_metrics['AUC-ROC'][class_idx]:.5f}, "
-					f"AUC-PR: {overall_metrics['AUC-PR'][class_idx]:.5f}, "
-					f"MCC: {overall_metrics['MCC'][class_idx]:.5f}")
+					   f"AUC-PR: {overall_metrics['AUC-PR'][class_idx]:.5f}, "
+					   f"MCC: {overall_metrics['MCC'][class_idx]:.5f}")
+
 	return
 
-import matplotlib.pyplot as plt  # Add for plotting
+class CombinedModel(nn.Module):
+	def __init__(self, cnn_output_dim, llm_output_dim, hidden_dim, nb_classes):
+		super(CombinedModel, self).__init__()
+		self.nb_classes = nb_classes
+
+		self.parallel_layers = nn.ModuleList([
+			nn.Sequential(
+				nn.Linear(2 + llm_output_dim, hidden_dim),
+				nn.ReLU(),
+				nn.Dropout(0.2),
+				nn.Linear(hidden_dim, 1)  # Output 1 label per layer
+			)
+			for _ in range(nb_classes)
+		])
+
+	def forward(self, cnn_output, llm_output):
+		# cnn - [batch_size, cnn_output_dim] / llm - [batch_size, 1, llm_output_dim]
+		llm_output = llm_output.squeeze(1)  # Remove the second dimension if present
+
+		
+		outputs = []
+		for i, layer in enumerate(self.parallel_layers):
+			specific_label = cnn_output[:, i].unsqueeze(1)  # Shape: [batch_size, 1]
+			last_label = cnn_output[:, -1].unsqueeze(1)  # Shape: [batch_size, 1]
+
+			x = torch.cat((specific_label, last_label, llm_output), dim=1)  # Shape: [batch_size, 2 + llm_output_dim]
+
+			outputs.append(layer(x))  # Shape: [batch_size, 1]
+
+		# Concatenate outputs from all parallel layers
+		outputs = torch.cat(outputs, dim=1)  # Shape: [batch_size, nb_classes]
+
+		return outputs
 
 def optimize_thresholds_and_plot(model, test_loader, class_count, save_path="./plots"):
 	"""
@@ -776,149 +809,85 @@ def optimize_thresholds_and_plot(model, test_loader, class_count, save_path="./p
 	return metrics
 
 if __name__ == "__main__":
-	model_path = ["cnn_models_linear"]
-	#test_model(model_path[0], result_file="./tests.txt", k_fold=5)
 
-	## Load data for CNN
-	if os.path.exists("cnn_embeddings.pth"):
-		print("Loading saved CNN embeddings...")
-		data = torch.load("cnn_embeddings.pth")
-		X_train_cnn = data["X_train"]
-		Y_train_cnn = data["Y_train"]
-		X_test_cnn = data["X_test"]
-		Y_test_cnn = data["Y_test"]
-		X_val_cnn = data["X_val"]
-		Y_val_cnn = data["Y_val"]
-	else:
-		X_train_cnn, X_test_cnn, X_val_cnn, Y_train_cnn, Y_test_cnn, Y_val_cnn = preprocess_data_onehot(
-			left=4000,
-			right=4000,
-			k_fold=8
-		)
-		# Save the embeddings for future use
-		torch.save({
-			"X_train": X_train_cnn,
-			"Y_train": Y_train_cnn,
-			"X_test": X_test_cnn,
-			"Y_test": Y_test_cnn,
-			"X_val": X_val_cnn,
-			"Y_val": Y_val_cnn
-		}, "cnn_embeddings.pth")
-
-	print(X_train_cnn[0].shape, Y_train_cnn[0].shape) #(12093, 4, 7998) (12093, 7)
-	print(X_test_cnn[0].shape, Y_test_cnn[0].shape)
-	print(X_val_cnn[0].shape, Y_val_cnn[0].shape)
-
-	## Initialize CNN model
-	cnn_layers = MultiscaleCNNLayers(
-		in_channels=64,
-		embedding_dim=4,  # For one-hot encoding
-		pooling_size=8,
-		pooling_stride=8,
-		drop_rate_cnn=0.2,
-		drop_rate_fc=0.25,
-		length=7998, # Length of the input sequence
-		nb_classes=7
-	)
+	#if os.path.exists("./llm_cnn_emb_2.pth"):
+	#	data = torch.load("./llm_cnn_emb_2.pth")
+	#	X_train = data["X_train"]
+	#	Y_train = data["Y_train"]
+	#	X_test = data["X_test"]
+	#	Y_test = data["Y_test"]
+	#	X_val = data["X_val"]
+	#	Y_val = data["Y_val"]
+	#else:
+	#	X_train, X_test, X_val, Y_train, Y_test, Y_val = preprocess_data(
+	#		left=4000,
+	#		right=4000,
+	#		k_fold=8
+	#	)	
+	#	# Save the embeddings for future use
+	#	torch.save({
+	#		"X_train": X_train,
+	#		"Y_train": Y_train,
+	#		"X_test": X_test,
+	#		"Y_test": Y_test,
+	#		"X_val": X_val,
+	#		"Y_val": Y_val
+	#	}, "llm_cnn_emb_2.pth")
 	
-	# Initialize CNN model with learnable weights
-	cnn_model_linear = MultiscaleCNNModel(
-		layers=cnn_layers,
-		num_classes=7,
-		sequence_length=15,  # Adjust based on your sequence length
-		aggregation_method="learnable_linear"
-	).to(DEVICE)
-
-	train_model(
-		model=cnn_model_linear,
-		mname="CNN_Linear",
-		X_train=X_train_cnn,
-		Y_train=Y_train_cnn,
-		X_test=X_test_cnn,
-		Y_test=Y_test_cnn,
-		X_val=X_val_cnn,
-		Y_val=Y_val_cnn,
-		batch_size=32,
-		epochs=CNN_EPOCHS,
-		save_path="./cnn_models_linear",
-		log_file="cnn_training_log_linear.txt"
-	)
-
-	## Initialize LLM model
-	#llm_model = LLMClassifier(
-	#	output_dim=7
-	#).to(DEVICE)
-
-	##print(llm_model)
-	## Train LLM model
-	#train_model(
-	#	model=llm_model,
-	#	mname="LLM",
-	#	X_train=X_train_llm,
-	#	Y_train=Y_train_llm,
-	#	X_test=X_test_llm,
-	#	Y_test=Y_test_llm,
-	#	X_val=X_val_llm,
-	#	Y_val=Y_val_llm,
-	#	batch_size=32,
-	#	epochs=LLM_EPOCHS,
-	#	lr=1e-5,
-	#	save_path="./llm_model",
-	#	log_file="llm_training_log.txt"
+	## Apply CNN model here, load the best one
+	#LLM_CNN = CombinedModel(
+	#	cnn_output_dim=7,
+	#	llm_output_dim=640,
+	#	hidden_dim=32,
+	#	nb_classes=7
 	#)
 
-	#### Initialize Ensemble model
-	###ensemble_model = EnsembleModel(
-	###	llm_model=llm_model,
-	###	cnn_model=cnn_model,
-	###	llm_output_dim7,  # Output dimension of LLM
-	###	cnn_output_dim=7,    # Output dimension of CNN
-	###	nb_classes=6
-	###).to(DEVICE)
+	## Train LLM model
+	#train_model(
+	#	model=LLM_CNN,
+	#	mname="LLM_CNN_model",
+	#	X_train=X_train,
+	#	Y_train=Y_train,
+	#	X_test=X_test,
+	#	Y_test=Y_test,
+	#	X_val=X_val,
+	#	Y_val=Y_val,
+	#	batch_size=32,
+	#	epochs=EPOCHS,
+	#	save_path="./LLM_CNN_model",
+	#	log_file="LLM_CNN_model.txt",
+	#	load_CNN_model_path="./cnn_models_linear_custom_loss/CNN_Linear_CustomLoss_model_fold8.pth"  # Load the best CNN model
+	#)
+	
 
-	### Train Ensemble model (implement a new function for this)
-	### train_ensemble_model(...)
+	# Test the model
+	if os.path.exists("./llm_cnn_test_data.pth"):
+		data = torch.load("./llm_cnn_test_data.pth")
+		X_test = data["X_test"]
+		Y_test = data["Y_test"]
+	else:
+		X_test, Y_test = preprocess_data(
+			left=4000,
+			right=4000,
+			k_fold=5,
+			test_only=True
+		)	
+		torch.save({
+			"X_test": X_test,
+			"Y_test": Y_test,
+		}, "llm_cnn_test_data.pth")
 
-	### Initialize CNN and LLM models
-	##cnn_layers = MultiscaleCNNLayers(
-	##	in_channels=64,
-	##	embedding_dim=4,  # For one-hot encoding
-	##	pooling_size=8,
-	##	pooling_stride=8,
-	##	drop_rate_cnn=0.3,
-	##	drop_rate_fc=0.3,
-	##	length=7998,  # Length of the input sequence
-	##	nb_classes=7
-	##)
-
-	##cnn_model = MultiscaleCNNModel(
-	##	layers=cnn_layers,
-	##	num_classes=7,
-	##	sequence_length=15,
-	##	aggregation_method="mean"
-	##).to(DEVICE)
-
-	##llm_model = LLMClassifier(output_dim=7).to(DEVICE)
-
-	### Initialize combined model
-	##combined_model = CombinedModel(
-	##	cnn_output_dim=7,  # Output dimension of CNN
-	##	llm_output_dim=7,  # Output dimension of LLM
-	##	hidden_dim=128,
-	##	nb_classes=7
-	##).to(DEVICE)
-
-	### Train CNN and LLM models separately (if not already trained)
-	### ...existing code for training CNN and LLM...
-
-	### Combine CNN and LLM outputs for prediction
-	##train_model(
-	##	model=combined_model,
-	##	mname="Combined",
-	##	X_train=(X_train_cnn, X_train_llm),
-	##	Y_train=Y_train_cnn,  # Assuming same labels for CNN and LLM
-	##	X_test=(X_test_cnn, X_test_llm),
-	##	Y_test=Y_test_cnn,
-	##	X_val=(X_val_cnn, X_val_llm),
-	##	Y_val=Y_val_cnn,
-	##	batch_size=32,	#	epochs=15,	#	save_path="./combined_models",	#	log_file="combined_training_log.txt"	#)	# Optimize thresholds and plot metrics for each fold	for fold in range(len(X_test_cnn)):		print(f"Optimizing thresholds for fold {fold + 1}")
+	print("Shape of X_test:", len(X_test))
+	print("Shape of Y_test:", len(Y_test))
+	
+	test_model(
+		path1="./LLM_CNN_model/LLM_CNN_model_model_fold8.pth",
+		path2="./cnn_models_linear_custom_loss/CNN_Linear_CustomLoss_model_fold8.pth",
+		X_test=X_test,
+		Y_test=Y_test,
+		k_fold=8,
+		batch_size=32,
+		#thresholds=None,
+		thresholds=[0.65, 0.94, 0.21, 0.56, 0.34, 0.29, 0.14],
+		log_file="test_result_log.txt"
+	)

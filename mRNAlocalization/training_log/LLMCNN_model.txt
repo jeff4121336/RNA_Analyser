@@ -1,0 +1,388 @@
+fold 1 (LLM Training)
+Epoch 1/50, Train Loss: 0.35511, Val Loss: 0.34761
+Best model for fold 1 saved with Val Loss: 0.34761
+Epoch 2/50, Train Loss: 0.34742, Val Loss: 0.34462
+Best model for fold 1 saved with Val Loss: 0.34462
+Epoch 3/50, Train Loss: 0.34459, Val Loss: 0.34011
+Best model for fold 1 saved with Val Loss: 0.34011
+Epoch 4/50, Train Loss: 0.34169, Val Loss: 0.33875
+Best model for fold 1 saved with Val Loss: 0.33875
+Epoch 5/50, Train Loss: 0.33893, Val Loss: 0.33554
+Best model for fold 1 saved with Val Loss: 0.33554
+Epoch 6/50, Train Loss: 0.33797, Val Loss: 0.33582
+Epoch 7/50, Train Loss: 0.33674, Val Loss: 0.33493
+Best model for fold 1 saved with Val Loss: 0.33493
+Epoch 8/50, Train Loss: 0.33483, Val Loss: 0.33476
+Best model for fold 1 saved with Val Loss: 0.33476
+Epoch 9/50, Train Loss: 0.33463, Val Loss: 0.33164
+Best model for fold 1 saved with Val Loss: 0.33164
+Epoch 10/50, Train Loss: 0.33385, Val Loss: 0.33469
+Epoch 11/50, Train Loss: 0.33292, Val Loss: 0.33072
+Best model for fold 1 saved with Val Loss: 0.33072
+Epoch 12/50, Train Loss: 0.33228, Val Loss: 0.33032
+Best model for fold 1 saved with Val Loss: 0.33032
+Epoch 13/50, Train Loss: 0.33159, Val Loss: 0.33247
+Epoch 14/50, Train Loss: 0.33127, Val Loss: 0.32935
+Best model for fold 1 saved with Val Loss: 0.32935
+Epoch 15/50, Train Loss: 0.33050, Val Loss: 0.33084
+Epoch 16/50, Train Loss: 0.33080, Val Loss: 0.33004
+Epoch 17/50, Train Loss: 0.32949, Val Loss: 0.33044
+Epoch 18/50, Train Loss: 0.33001, Val Loss: 0.32881
+Best model for fold 1 saved with Val Loss: 0.32881
+Epoch 19/50, Train Loss: 0.32981, Val Loss: 0.33184
+Epoch 20/50, Train Loss: 0.32935, Val Loss: 0.32817
+Best model for fold 1 saved with Val Loss: 0.32817
+Epoch 21/50, Train Loss: 0.32929, Val Loss: 0.32757
+Best model for fold 1 saved with Val Loss: 0.32757
+Epoch 22/50, Train Loss: 0.32797, Val Loss: 0.32808
+Epoch 23/50, Train Loss: 0.32813, Val Loss: 0.33162
+Epoch 24/50, Train Loss: 0.32761, Val Loss: 0.32785
+Epoch 25/50, Train Loss: 0.32739, Val Loss: 0.32582
+Best model for fold 1 saved with Val Loss: 0.32582
+Epoch 26/50, Train Loss: 0.32756, Val Loss: 0.32502
+Best model for fold 1 saved with Val Loss: 0.32502
+Epoch 27/50, Train Loss: 0.32712, Val Loss: 0.32623
+Epoch 28/50, Train Loss: 0.32698, Val Loss: 0.32871
+Epoch 29/50, Train Loss: 0.32605, Val Loss: 0.32557
+Epoch 30/50, Train Loss: 0.32592, Val Loss: 0.33100
+Epoch 31/50, Train Loss: 0.32629, Val Loss: 0.32392
+Best model for fold 1 saved with Val Loss: 0.32392
+Epoch 32/50, Train Loss: 0.32521, Val Loss: 0.32448
+Epoch 33/50, Train Loss: 0.32467, Val Loss: 0.32453
+Epoch 34/50, Train Loss: 0.32468, Val Loss: 0.32556
+Epoch 35/50, Train Loss: 0.32466, Val Loss: 0.32437
+Epoch 36/50, Train Loss: 0.32472, Val Loss: 0.32574
+Epoch 37/50, Train Loss: 0.32411, Val Loss: 0.32506
+Epoch 38/50, Train Loss: 0.32441, Val Loss: 0.32488
+Epoch 39/50, Train Loss: 0.32386, Val Loss: 0.32354
+Best model for fold 1 saved with Val Loss: 0.32354
+Epoch 40/50, Train Loss: 0.32316, Val Loss: 0.32415
+Epoch 41/50, Train Loss: 0.32362, Val Loss: 0.32282
+Best model for fold 1 saved with Val Loss: 0.32282
+Epoch 42/50, Train Loss: 0.32387, Val Loss: 0.32245
+Best model for fold 1 saved with Val Loss: 0.32245
+Epoch 43/50, Train Loss: 0.32282, Val Loss: 0.32569
+Epoch 44/50, Train Loss: 0.32300, Val Loss: 0.32236
+Best model for fold 1 saved with Val Loss: 0.32236
+Epoch 45/50, Train Loss: 0.32292, Val Loss: 0.32453
+Epoch 46/50, Train Loss: 0.32346, Val Loss: 0.32275
+Epoch 47/50, Train Loss: 0.32210, Val Loss: 0.32416
+Epoch 48/50, Train Loss: 0.32163, Val Loss: 0.32428
+Epoch 49/50, Train Loss: 0.32169, Val Loss: 0.32284
+Epoch 50/50, Train Loss: 0.32175, Val Loss: 0.32356
+Best model for fold 1 loaded from ./llm_models/LLM_model_fold1.pth
+Test Loss: 0.32592
+fold 2 (LLM Training)
+Epoch 1/50, Train Loss: 0.32411, Val Loss: 0.32355
+Best model for fold 2 saved with Val Loss: 0.32355
+Epoch 2/50, Train Loss: 0.32276, Val Loss: 0.32314
+Best model for fold 2 saved with Val Loss: 0.32314
+Epoch 3/50, Train Loss: 0.32321, Val Loss: 0.32594
+Epoch 4/50, Train Loss: 0.32281, Val Loss: 0.32636
+Epoch 5/50, Train Loss: 0.32328, Val Loss: 0.32766
+Epoch 6/50, Train Loss: 0.32363, Val Loss: 0.32635
+Epoch 7/50, Train Loss: 0.32289, Val Loss: 0.32581
+Epoch 8/50, Train Loss: 0.32273, Val Loss: 0.32623
+Epoch 9/50, Train Loss: 0.32176, Val Loss: 0.32501
+Epoch 10/50, Train Loss: 0.32089, Val Loss: 0.32262
+Best model for fold 2 saved with Val Loss: 0.32262
+Epoch 11/50, Train Loss: 0.32119, Val Loss: 0.32516
+Epoch 12/50, Train Loss: 0.32107, Val Loss: 0.32554
+Epoch 13/50, Train Loss: 0.32133, Val Loss: 0.32451
+Epoch 14/50, Train Loss: 0.32154, Val Loss: 0.32204
+Best model for fold 2 saved with Val Loss: 0.32204
+Epoch 15/50, Train Loss: 0.32091, Val Loss: 0.32307
+Epoch 16/50, Train Loss: 0.32070, Val Loss: 0.33598
+Epoch 17/50, Train Loss: 0.32105, Val Loss: 0.32150
+Best model for fold 2 saved with Val Loss: 0.32150
+Epoch 18/50, Train Loss: 0.32028, Val Loss: 0.32442
+Epoch 19/50, Train Loss: 0.31925, Val Loss: 0.32322
+Epoch 20/50, Train Loss: 0.31997, Val Loss: 0.33185
+Epoch 21/50, Train Loss: 0.32132, Val Loss: 0.32882
+Epoch 22/50, Train Loss: 0.32009, Val Loss: 0.32599
+Epoch 23/50, Train Loss: 0.31919, Val Loss: 0.32231
+Epoch 24/50, Train Loss: 0.31940, Val Loss: 0.32912
+Early Stop Trigger.
+Best model for fold 2 loaded from ./llm_models/LLM_model_fold2.pth
+Test Loss: 0.32042
+fold 3 (LLM Training)
+Epoch 1/50, Train Loss: 0.32022, Val Loss: 0.32570
+Best model for fold 3 saved with Val Loss: 0.32570
+Epoch 2/50, Train Loss: 0.32003, Val Loss: 0.32770
+Epoch 3/50, Train Loss: 0.32055, Val Loss: 0.32316
+Best model for fold 3 saved with Val Loss: 0.32316
+Epoch 4/50, Train Loss: 0.32018, Val Loss: 0.32356
+Epoch 5/50, Train Loss: 0.32033, Val Loss: 0.32296
+Best model for fold 3 saved with Val Loss: 0.32296
+Epoch 6/50, Train Loss: 0.32038, Val Loss: 0.32497
+Epoch 7/50, Train Loss: 0.32005, Val Loss: 0.32177
+Best model for fold 3 saved with Val Loss: 0.32177
+Epoch 8/50, Train Loss: 0.31961, Val Loss: 0.33472
+Epoch 9/50, Train Loss: 0.31986, Val Loss: 0.32191
+Epoch 10/50, Train Loss: 0.31940, Val Loss: 0.32669
+Epoch 11/50, Train Loss: 0.31975, Val Loss: 0.32236
+Epoch 12/50, Train Loss: 0.31909, Val Loss: 0.32306
+Epoch 13/50, Train Loss: 0.31955, Val Loss: 0.32324
+Epoch 14/50, Train Loss: 0.31899, Val Loss: 0.32364
+Epoch 15/50, Train Loss: 0.31923, Val Loss: 0.32338
+Epoch 16/50, Train Loss: 0.31823, Val Loss: 0.32174
+Best model for fold 3 saved with Val Loss: 0.32174
+Epoch 17/50, Train Loss: 0.31855, Val Loss: 0.32285
+Epoch 18/50, Train Loss: 0.31859, Val Loss: 0.32043
+Best model for fold 3 saved with Val Loss: 0.32043
+Epoch 19/50, Train Loss: 0.31836, Val Loss: 0.32329
+Epoch 20/50, Train Loss: 0.31857, Val Loss: 0.32311
+Epoch 21/50, Train Loss: 0.31835, Val Loss: 0.32067
+Epoch 22/50, Train Loss: 0.31841, Val Loss: 0.32400
+Epoch 23/50, Train Loss: 0.31836, Val Loss: 0.32351
+Epoch 24/50, Train Loss: 0.31715, Val Loss: 0.32309
+Epoch 25/50, Train Loss: 0.31750, Val Loss: 0.32227
+Epoch 26/50, Train Loss: 0.31724, Val Loss: 0.32916
+Epoch 27/50, Train Loss: 0.31768, Val Loss: 0.32150
+Epoch 28/50, Train Loss: 0.31732, Val Loss: 0.32501
+Epoch 29/50, Train Loss: 0.31727, Val Loss: 0.32559
+Epoch 30/50, Train Loss: 0.31688, Val Loss: 0.32147
+Epoch 31/50, Train Loss: 0.31590, Val Loss: 0.32319
+Epoch 32/50, Train Loss: 0.31681, Val Loss: 0.32404
+Epoch 33/50, Train Loss: 0.31715, Val Loss: 0.32523
+Epoch 34/50, Train Loss: 0.31601, Val Loss: 0.32100
+Epoch 35/50, Train Loss: 0.31599, Val Loss: 0.32297
+Epoch 36/50, Train Loss: 0.31563, Val Loss: 0.32222
+Epoch 37/50, Train Loss: 0.31672, Val Loss: 0.32371
+Epoch 38/50, Train Loss: 0.31567, Val Loss: 0.32203
+Epoch 39/50, Train Loss: 0.31565, Val Loss: 0.32136
+Epoch 40/50, Train Loss: 0.31527, Val Loss: 0.32440
+Epoch 41/50, Train Loss: 0.31612, Val Loss: 0.32273
+Epoch 42/50, Train Loss: 0.31540, Val Loss: 0.32235
+Epoch 43/50, Train Loss: 0.31472, Val Loss: 0.32086
+Epoch 44/50, Train Loss: 0.31490, Val Loss: 0.32235
+Epoch 45/50, Train Loss: 0.31538, Val Loss: 0.33094
+Early Stop Trigger.
+Best model for fold 3 loaded from ./llm_models/LLM_model_fold3.pth
+Test Loss: 0.31860
+fold 4 (LLM Training)
+Epoch 1/50, Train Loss: 0.31749, Val Loss: 0.32367
+Best model for fold 4 saved with Val Loss: 0.32367
+Epoch 2/50, Train Loss: 0.31832, Val Loss: 0.32279
+Best model for fold 4 saved with Val Loss: 0.32279
+Epoch 3/50, Train Loss: 0.31768, Val Loss: 0.32296
+Epoch 4/50, Train Loss: 0.31742, Val Loss: 0.32134
+Best model for fold 4 saved with Val Loss: 0.32134
+Epoch 5/50, Train Loss: 0.31751, Val Loss: 0.32041
+Best model for fold 4 saved with Val Loss: 0.32041
+Epoch 6/50, Train Loss: 0.31745, Val Loss: 0.32096
+Epoch 7/50, Train Loss: 0.31773, Val Loss: 0.32261
+Epoch 8/50, Train Loss: 0.31723, Val Loss: 0.32266
+Epoch 9/50, Train Loss: 0.31704, Val Loss: 0.32240
+Epoch 10/50, Train Loss: 0.31631, Val Loss: 0.31907
+Best model for fold 4 saved with Val Loss: 0.31907
+Epoch 11/50, Train Loss: 0.31678, Val Loss: 0.31927
+Epoch 12/50, Train Loss: 0.31690, Val Loss: 0.32122
+Epoch 13/50, Train Loss: 0.31687, Val Loss: 0.32163
+Epoch 14/50, Train Loss: 0.31590, Val Loss: 0.32087
+Epoch 15/50, Train Loss: 0.31628, Val Loss: 0.32316
+Epoch 16/50, Train Loss: 0.31610, Val Loss: 0.32145
+Epoch 17/50, Train Loss: 0.31574, Val Loss: 0.32272
+Epoch 18/50, Train Loss: 0.31525, Val Loss: 0.32036
+Epoch 19/50, Train Loss: 0.31540, Val Loss: 0.32430
+Epoch 20/50, Train Loss: 0.31524, Val Loss: 0.32354
+Epoch 21/50, Train Loss: 0.31547, Val Loss: 0.32181
+Epoch 22/50, Train Loss: 0.31592, Val Loss: 0.31935
+Epoch 23/50, Train Loss: 0.31543, Val Loss: 0.32514
+Epoch 24/50, Train Loss: 0.31532, Val Loss: 0.32094
+Epoch 25/50, Train Loss: 0.31582, Val Loss: 0.31996
+Epoch 26/50, Train Loss: 0.31449, Val Loss: 0.32177
+Epoch 27/50, Train Loss: 0.31461, Val Loss: 0.32073
+Epoch 28/50, Train Loss: 0.31528, Val Loss: 0.32341
+Epoch 29/50, Train Loss: 0.31447, Val Loss: 0.32274
+Epoch 30/50, Train Loss: 0.31496, Val Loss: 0.32044
+Epoch 31/50, Train Loss: 0.31350, Val Loss: 0.32352
+Epoch 32/50, Train Loss: 0.31537, Val Loss: 0.32299
+Epoch 33/50, Train Loss: 0.31462, Val Loss: 0.32307
+Epoch 34/50, Train Loss: 0.31316, Val Loss: 0.32276
+Epoch 35/50, Train Loss: 0.31449, Val Loss: 0.31867
+Best model for fold 4 saved with Val Loss: 0.31867
+Epoch 36/50, Train Loss: 0.31467, Val Loss: 0.32247
+Epoch 37/50, Train Loss: 0.31328, Val Loss: 0.32052
+Epoch 38/50, Train Loss: 0.31352, Val Loss: 0.32201
+Epoch 39/50, Train Loss: 0.31352, Val Loss: 0.31873
+Epoch 40/50, Train Loss: 0.31306, Val Loss: 0.31963
+Epoch 41/50, Train Loss: 0.31284, Val Loss: 0.32753
+Epoch 42/50, Train Loss: 0.31338, Val Loss: 0.32439
+Epoch 43/50, Train Loss: 0.31339, Val Loss: 0.31905
+Epoch 44/50, Train Loss: 0.31286, Val Loss: 0.32102
+Epoch 45/50, Train Loss: 0.31241, Val Loss: 0.32118
+Epoch 46/50, Train Loss: 0.31262, Val Loss: 0.31942
+Epoch 47/50, Train Loss: 0.31249, Val Loss: 0.31955
+Epoch 48/50, Train Loss: 0.31190, Val Loss: 0.32104
+Epoch 49/50, Train Loss: 0.31200, Val Loss: 0.32238
+Epoch 50/50, Train Loss: 0.31186, Val Loss: 0.32348
+Best model for fold 4 loaded from ./llm_models/LLM_model_fold4.pth
+Test Loss: 0.32013
+fold 5 (LLM Training)
+Epoch 1/50, Train Loss: 0.31506, Val Loss: 0.32033
+Best model for fold 5 saved with Val Loss: 0.32033
+Epoch 2/50, Train Loss: 0.31513, Val Loss: 0.32215
+Epoch 3/50, Train Loss: 0.31421, Val Loss: 0.32559
+Epoch 4/50, Train Loss: 0.31398, Val Loss: 0.32047
+Epoch 5/50, Train Loss: 0.31439, Val Loss: 0.32016
+Best model for fold 5 saved with Val Loss: 0.32016
+Epoch 6/50, Train Loss: 0.31404, Val Loss: 0.32091
+Epoch 7/50, Train Loss: 0.31416, Val Loss: 0.32187
+Epoch 8/50, Train Loss: 0.31381, Val Loss: 0.32263
+Epoch 9/50, Train Loss: 0.31336, Val Loss: 0.32235
+Epoch 10/50, Train Loss: 0.31357, Val Loss: 0.32296
+Epoch 11/50, Train Loss: 0.31330, Val Loss: 0.32190
+Epoch 12/50, Train Loss: 0.31307, Val Loss: 0.32213
+Epoch 13/50, Train Loss: 0.31333, Val Loss: 0.32154
+Epoch 14/50, Train Loss: 0.31324, Val Loss: 0.32050
+Epoch 15/50, Train Loss: 0.31413, Val Loss: 0.32115
+Epoch 16/50, Train Loss: 0.31286, Val Loss: 0.32088
+Epoch 17/50, Train Loss: 0.31261, Val Loss: 0.33058
+Epoch 18/50, Train Loss: 0.31270, Val Loss: 0.32149
+Epoch 19/50, Train Loss: 0.31292, Val Loss: 0.32113
+Epoch 20/50, Train Loss: 0.31207, Val Loss: 0.32284
+Epoch 21/50, Train Loss: 0.31203, Val Loss: 0.32943
+Epoch 22/50, Train Loss: 0.31199, Val Loss: 0.32070
+Epoch 23/50, Train Loss: 0.31240, Val Loss: 0.32422
+Epoch 24/50, Train Loss: 0.31125, Val Loss: 0.32150
+Epoch 25/50, Train Loss: 0.31135, Val Loss: 0.32068
+Epoch 26/50, Train Loss: 0.31192, Val Loss: 0.32257
+Epoch 27/50, Train Loss: 0.31197, Val Loss: 0.32675
+Early Stop Trigger.
+Best model for fold 5 loaded from ./llm_models/LLM_model_fold5.pth
+Test Loss: 0.31391
+fold 6 (LLM Training)
+Epoch 1/50, Train Loss: 0.31520, Val Loss: 0.32243
+Best model for fold 6 saved with Val Loss: 0.32243
+Epoch 2/50, Train Loss: 0.31497, Val Loss: 0.32460
+Epoch 3/50, Train Loss: 0.31480, Val Loss: 0.32029
+Best model for fold 6 saved with Val Loss: 0.32029
+Epoch 4/50, Train Loss: 0.31480, Val Loss: 0.32155
+Epoch 5/50, Train Loss: 0.31381, Val Loss: 0.32564
+Epoch 6/50, Train Loss: 0.31458, Val Loss: 0.32082
+Epoch 7/50, Train Loss: 0.31394, Val Loss: 0.32291
+Epoch 8/50, Train Loss: 0.31451, Val Loss: 0.32199
+Epoch 9/50, Train Loss: 0.31360, Val Loss: 0.32138
+Epoch 10/50, Train Loss: 0.31379, Val Loss: 0.32364
+Epoch 11/50, Train Loss: 0.31392, Val Loss: 0.32474
+Epoch 12/50, Train Loss: 0.31290, Val Loss: 0.32378
+Epoch 13/50, Train Loss: 0.31366, Val Loss: 0.32151
+Epoch 14/50, Train Loss: 0.31302, Val Loss: 0.32103
+Epoch 15/50, Train Loss: 0.31360, Val Loss: 0.32278
+Epoch 16/50, Train Loss: 0.31451, Val Loss: 0.32114
+Epoch 17/50, Train Loss: 0.31326, Val Loss: 0.32142
+Epoch 18/50, Train Loss: 0.31358, Val Loss: 0.32179
+Epoch 19/50, Train Loss: 0.31265, Val Loss: 0.32061
+Epoch 20/50, Train Loss: 0.31376, Val Loss: 0.32815
+Epoch 21/50, Train Loss: 0.31241, Val Loss: 0.31927
+Best model for fold 6 saved with Val Loss: 0.31927
+Epoch 22/50, Train Loss: 0.31221, Val Loss: 0.32206
+Epoch 23/50, Train Loss: 0.31211, Val Loss: 0.31985
+Epoch 24/50, Train Loss: 0.31256, Val Loss: 0.32033
+Epoch 25/50, Train Loss: 0.31201, Val Loss: 0.32078
+Epoch 26/50, Train Loss: 0.31269, Val Loss: 0.32163
+Epoch 27/50, Train Loss: 0.31162, Val Loss: 0.31943
+Epoch 28/50, Train Loss: 0.31151, Val Loss: 0.32718
+Epoch 29/50, Train Loss: 0.31202, Val Loss: 0.32225
+Epoch 30/50, Train Loss: 0.31152, Val Loss: 0.32056
+Epoch 31/50, Train Loss: 0.31165, Val Loss: 0.32030
+Epoch 32/50, Train Loss: 0.31208, Val Loss: 0.32167
+Epoch 33/50, Train Loss: 0.31120, Val Loss: 0.32715
+Epoch 34/50, Train Loss: 0.31160, Val Loss: 0.32014
+Epoch 35/50, Train Loss: 0.31132, Val Loss: 0.32188
+Epoch 36/50, Train Loss: 0.31178, Val Loss: 0.32385
+Epoch 37/50, Train Loss: 0.31146, Val Loss: 0.32171
+Epoch 38/50, Train Loss: 0.31037, Val Loss: 0.32060
+Epoch 39/50, Train Loss: 0.31081, Val Loss: 0.32630
+Early Stop Trigger.
+Best model for fold 6 loaded from ./llm_models/LLM_model_fold6.pth
+Test Loss: 0.31310
+fold 7 (LLM Training)
+Epoch 1/50, Train Loss: 0.31304, Val Loss: 0.32266
+Best model for fold 7 saved with Val Loss: 0.32266
+Epoch 2/50, Train Loss: 0.31239, Val Loss: 0.32501
+Epoch 3/50, Train Loss: 0.31295, Val Loss: 0.32540
+Epoch 4/50, Train Loss: 0.31251, Val Loss: 0.32607
+Epoch 5/50, Train Loss: 0.31269, Val Loss: 0.32252
+Best model for fold 7 saved with Val Loss: 0.32252
+Epoch 6/50, Train Loss: 0.31240, Val Loss: 0.32119
+Best model for fold 7 saved with Val Loss: 0.32119
+Epoch 7/50, Train Loss: 0.31194, Val Loss: 0.32422
+Epoch 8/50, Train Loss: 0.31193, Val Loss: 0.32137
+Epoch 9/50, Train Loss: 0.31158, Val Loss: 0.32233
+Epoch 10/50, Train Loss: 0.31200, Val Loss: 0.32210
+Epoch 11/50, Train Loss: 0.31170, Val Loss: 0.32225
+Epoch 12/50, Train Loss: 0.31144, Val Loss: 0.32830
+Epoch 13/50, Train Loss: 0.31128, Val Loss: 0.32234
+Epoch 14/50, Train Loss: 0.31080, Val Loss: 0.32478
+Epoch 15/50, Train Loss: 0.31121, Val Loss: 0.32408
+Epoch 16/50, Train Loss: 0.31116, Val Loss: 0.32265
+Epoch 17/50, Train Loss: 0.31137, Val Loss: 0.32170
+Epoch 18/50, Train Loss: 0.31062, Val Loss: 0.32215
+Epoch 19/50, Train Loss: 0.31057, Val Loss: 0.32172
+Epoch 20/50, Train Loss: 0.31110, Val Loss: 0.32358
+Epoch 21/50, Train Loss: 0.31104, Val Loss: 0.32223
+Epoch 22/50, Train Loss: 0.31115, Val Loss: 0.32268
+Epoch 23/50, Train Loss: 0.31003, Val Loss: 0.32385
+Epoch 24/50, Train Loss: 0.31084, Val Loss: 0.32397
+Epoch 25/50, Train Loss: 0.31071, Val Loss: 0.32587
+Epoch 26/50, Train Loss: 0.30952, Val Loss: 0.32266
+Epoch 27/50, Train Loss: 0.31028, Val Loss: 0.32185
+Epoch 28/50, Train Loss: 0.30956, Val Loss: 0.32259
+Epoch 29/50, Train Loss: 0.30953, Val Loss: 0.32715
+Epoch 30/50, Train Loss: 0.30981, Val Loss: 0.32429
+Epoch 31/50, Train Loss: 0.30970, Val Loss: 0.32486
+Epoch 32/50, Train Loss: 0.30931, Val Loss: 0.32787
+Early Stop Trigger.
+Best model for fold 7 loaded from ./llm_models/LLM_model_fold7.pth
+Test Loss: 0.30526
+fold 8 (LLM Training)
+Epoch 1/50, Train Loss: 0.31208, Val Loss: 0.31920
+Best model for fold 8 saved with Val Loss: 0.31920
+Epoch 2/50, Train Loss: 0.31211, Val Loss: 0.32484
+Epoch 3/50, Train Loss: 0.31211, Val Loss: 0.32254
+Epoch 4/50, Train Loss: 0.31231, Val Loss: 0.32493
+Epoch 5/50, Train Loss: 0.31173, Val Loss: 0.31865
+Best model for fold 8 saved with Val Loss: 0.31865
+Epoch 6/50, Train Loss: 0.31097, Val Loss: 0.31939
+Epoch 7/50, Train Loss: 0.31193, Val Loss: 0.32085
+Epoch 8/50, Train Loss: 0.31176, Val Loss: 0.32162
+Epoch 9/50, Train Loss: 0.31192, Val Loss: 0.32705
+Epoch 10/50, Train Loss: 0.31165, Val Loss: 0.32032
+Epoch 11/50, Train Loss: 0.31089, Val Loss: 0.32120
+Epoch 12/50, Train Loss: 0.31078, Val Loss: 0.32662
+Epoch 13/50, Train Loss: 0.31157, Val Loss: 0.31928
+Epoch 14/50, Train Loss: 0.31093, Val Loss: 0.32209
+Epoch 15/50, Train Loss: 0.31053, Val Loss: 0.32232
+Epoch 16/50, Train Loss: 0.31009, Val Loss: 0.32291
+Epoch 17/50, Train Loss: 0.31094, Val Loss: 0.32200
+Epoch 18/50, Train Loss: 0.30978, Val Loss: 0.32216
+Epoch 19/50, Train Loss: 0.31039, Val Loss: 0.32201
+Epoch 20/50, Train Loss: 0.31073, Val Loss: 0.32128
+Epoch 21/50, Train Loss: 0.30978, Val Loss: 0.32011
+Epoch 22/50, Train Loss: 0.31050, Val Loss: 0.32230
+Epoch 23/50, Train Loss: 0.31007, Val Loss: 0.32322
+Epoch 24/50, Train Loss: 0.31069, Val Loss: 0.32066
+Epoch 25/50, Train Loss: 0.30933, Val Loss: 0.32101
+Epoch 26/50, Train Loss: 0.30975, Val Loss: 0.32360
+Epoch 27/50, Train Loss: 0.30976, Val Loss: 0.32308
+Epoch 28/50, Train Loss: 0.30982, Val Loss: 0.31962
+Epoch 29/50, Train Loss: 0.30869, Val Loss: 0.31970
+Epoch 30/50, Train Loss: 0.30981, Val Loss: 0.32291
+Epoch 31/50, Train Loss: 0.30869, Val Loss: 0.32151
+Epoch 32/50, Train Loss: 0.30842, Val Loss: 0.32293
+Epoch 33/50, Train Loss: 0.30924, Val Loss: 0.32169
+Epoch 34/50, Train Loss: 0.30967, Val Loss: 0.32105
+Epoch 35/50, Train Loss: 0.30840, Val Loss: 0.32128
+Epoch 36/50, Train Loss: 0.30842, Val Loss: 0.32497
+Early Stop Trigger.
+Best model for fold 8 loaded from ./llm_models/LLM_model_fold8.pth
+Test Loss: 0.30908
+Class 1 - Best MCC: 0.35262 at Threshold: 0.66
+Class 2 - Best MCC: 0.08942 at Threshold: 0.93
+Class 3 - Best MCC: 0.24360 at Threshold: 0.17
+Class 4 - Best MCC: 0.33374 at Threshold: 0.54
+Class 5 - Best MCC: 0.33167 at Threshold: 0.32
+Class 6 - Best MCC: 0.28266 at Threshold: 0.25
+Class 7 - Best MCC: 0.17068 at Threshold: 0.14

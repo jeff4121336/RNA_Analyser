@@ -9,6 +9,7 @@ import torch.nn.functional as F
 from collections import OrderedDict
 import torch.optim as optim
 import os
+import matplotlib.pyplot as plt
 
 from gene_data import Genedata
 from hier_attention_mask import AttentionMask
@@ -23,11 +24,10 @@ DATA_FILE = DATA_PATH + "modified_multilabel_seq_nonredundent.fasta"
 #DATA_FILE = DATA_PATH + "test.fasta"
 
 CNN_EPOCHS = 30
+# Update the THRESHOLD global variable with class-specific thresholds
 
-#THRESHOLD = [0.67, 0.98, 0.14, 0.50, 0.32, 0.17, 0.19] #CNN LINEAR
-#THRESHOLD = [0.55 ,0.99 ,0.10 ,0.44 ,0.24 ,0.21 ,0.14] #CNN MEAN
-#THERSHOLD = [0.64, 0.98, 0.15, 0.57, 0.35, 0.25, 0.13] # LLM
-THERSHOLD = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5] # LLM
+THRESHOLD = [0.59, 0.98, 0.16, 0.52, 0.30, 0.25, 0.12] #LLM LINEAR MODIFIED LOSS
+
 
 encoding_seq = OrderedDict([
 	('A', [1, 0, 0, 0]),
@@ -38,8 +38,37 @@ encoding_seq = OrderedDict([
 	('-', [0, 0, 0, 0]),  # Pad
 ])
 
+class StableFocalLoss(torch.nn.Module):
+	def __init__(self, alpha, gamma, omega, reduction='sum'):
+		super().__init__()
+		self.alpha = alpha  # Tensor of shape [N_classes]
+		self.gamma = gamma  # Scalar
+		self.omega = omega  # Tensor of shape [N_classes]
+		self.reduction = reduction
+
+	def forward(self, logits, targets):
+		# Logit-adjusted focal loss (numerically stable)
+		bce_loss = F.binary_cross_entropy_with_logits(
+			logits, targets, reduction='none'
+		)  # Shape: [batch_size, N_classes]
+
+		probs = torch.sigmoid(logits)
+		p_t = torch.where(targets == 1, probs, 1 - probs)
+		modulating_factor = (1 - p_t) ** self.gamma
+
+		# Apply class weights (alpha) and category weights (omega)
+		loss = modulating_factor * bce_loss
+		loss = loss * self.alpha * self.omega  # Element-wise multiplication
+
+		if self.reduction == 'sum':
+			return loss.sum()
+		elif self.reduction == 'mean':
+			return loss.mean()
+		else:
+			return loss
+
 class EarlyStopper:
-	def __init__(self, patience=5, min_delta=0.05):
+	def __init__(self, patience=3, min_delta=0.05):
 		self.patience = patience
 		self.min_delta = min_delta
 		self.counter = 0
@@ -91,29 +120,28 @@ class RNA_FM:
 				chunk_embeddings.append(chunk_embedding)
 
 			combined_embedding = torch.cat(chunk_embeddings, dim=1)  # Shape: [1, seq_len, 640]
+			combined_embedding = torch.mean(combined_embedding, dim=1)  # Shape: [1, 640]
 			all_embeddings.append(combined_embedding)
-			print(all_embeddings[-1].shape) # [1, 8000, 640]
-			exit()
-
+			
 		# Concatenate all embeddings along the batch dimension
-		return torch.cat(all_embeddings, dim=0)  # Shape: [batch_size, seq_len, 1280]
+		return torch.cat(all_embeddings, dim=0)  # Shape: [batch_size, seq_len, 640]
 			
 class LLMClassifier(nn.Module):
 	def __init__(self, output_dim):
 		super(LLMClassifier, self).__init__()
 		self.output_dim = output_dim
 
-		self.fc1 = nn.Linear(1280, 512)
-		self.fc2 = nn.Linear(512, output_dim)
+		self.fc1 = nn.Linear(640, 64)
+		self.fc2 = nn.Linear(64, output_dim)
 		self.activation = nn.GELU()
-		self.dropout = nn.Dropout(0.15)
+		self.dropout = nn.Dropout(0.1)
 
 	def forward(self, x):
 		x = self.fc1(x)
 		x = self.activation(x)
 		x = self.dropout(x)
 		x = self.fc2(x)
-		return x, 0
+		return x
 
 class MultiscaleCNNLayers(nn.Module):
 	def __init__(self, in_channels, embedding_dim, pooling_size, pooling_stride, drop_rate_cnn, drop_rate_fc, length, nb_classes):
@@ -135,10 +163,13 @@ class MultiscaleCNNLayers(nn.Module):
 		self.dropout_cnn = nn.Dropout(drop_rate_cnn)
 		self.dropout_fc = nn.Dropout(drop_rate_fc)
 
-		self.fc1 = nn.Linear(length // pooling_stride, 7)
-		nn.init.xavier_uniform_(self.fc1.weight)
+		self.fc = nn.Linear(length // pooling_stride, 7)
+
+		nn.init.xavier_uniform_(self.fc.weight)
+
 
 		self.activation = nn.GELU() 
+
 		self.attentionHead = AttentionMask(hidden = (length // pooling_stride) + 1, da = 80, r = 5)
 
 	def forward_cnn(self, x, conv1, conv2, bn1, bn2):
@@ -160,59 +191,26 @@ class MultiscaleCNNLayers(nn.Module):
 		#return x, regulatization_loss, att_map
 	
 class MultiscaleCNNModel(nn.Module):
-	def __init__(self, layers, num_classes, sequence_length, aggregation_method="mean"):
+	def __init__(self, layers, num_classes, sequence_length, aggregation_method="learnable_linear"):
 		super(MultiscaleCNNModel, self).__init__()
 		self.layers = layers
-		self.aggregation_method = aggregation_method  # "mean" or "learnable_weights"
+		self.aggregation_method = aggregation_method
 		
 		if aggregation_method == "learnable_linear":
 			self.sequence_aggregator = nn.Linear(sequence_length, 1)
 
 	def forward(self, x):
-		#x = self.dropout(self.fc1(x))
-		#x = self.dropout(self.fc2(x))
-		#x = self.fc3(x)
-		#print(x.shape)
-		#exit()
-		#x = x.permute(0, 2, 1)  # Shape: [batch_size, num_classes, sequence_length]
-		#print(x.shape)
-		# Pass through CNN layers
 		x1, x1_regulatization_loss = self.layers.forward_cnn(x, self.layers.conv1_1, self.layers.conv1_2, self.layers.bn1, self.layers.bn2)
 		x2, x2_regulatization_loss = self.layers.forward_cnn(x, self.layers.conv2_1, self.layers.conv2_2, self.layers.bn1, self.layers.bn2)
 		x3, x3_regulatization_loss = self.layers.forward_cnn(x, self.layers.conv3_1, self.layers.conv3_2, self.layers.bn2, self.layers.bn2)
 		x = torch.cat((x1, x2, x3), dim=1) # [32, 15, 999]
-		x = self.layers.fc1(x) # [32, 15, 7]
+		x = self.layers.dropout_fc(self.layers.fc(x)) # [32, 15, 7]
 
 		if self.aggregation_method == "learnable_linear":
 			x = x.permute(0, 2, 1)  # Shape: [batch_size, 7, 15]
 			x = self.sequence_aggregator(x).squeeze(-1) 
 
 		return x, x1_regulatization_loss + x2_regulatization_loss + x3_regulatization_loss
-	
-#class EnsembleModel(nn.Module):
-#	def __init__(self, llm_model, cnn_model, llm_output_dim, cnn_output_dim, hidden_dim, nb_classes):
-#		super(EnsembleModel, self).__init__()
-#		self.llm_model = llm_model
-#		self.cnn_model = cnn_model
-
-#		# Fully connected NN for combining LLM and CNN outputs and length compoent in second layer
-#		self.fc1 = nn.Linear(llm_output_dim + cnn_output_dim, (llm_output_dim + cnn_output_dim)/ 2 + 1)
-#		self.fc2 = nn.Linear((llm_output_dim + cnn_output_dim)/ 2 + 1, nb_classes)
-#		self.activation = nn.ReLU()
-#		self.dropout = nn.Dropout(0.2)
-	
-#	def forward(self, x):
-#		llm_output = self.llm_model(x) # LLM output
-#		cnn_output = self.cnn_model(x) # CNN output
-
-#		x = torch.cat((llm_output, cnn_output), dim=1) # Combine LLM and CNN outputs
-
-#		x = self.fc1(x)
-#		self.activation(x)
-#		x = self.dropout(x)
-#		x = self.fc2(x)
-
-#		return x
 
 class GeneDataset(Dataset):
 	def __init__(self, sequences, labels):
@@ -456,10 +454,15 @@ def preprocess_data_raw_with_embeddings(left=3999, right=3999):
 	return X_train, X_test, X_val, Y_train, Y_test, Y_val
 
 def train_model(model, mname, X_train, Y_train, X_test, Y_test, X_val,
-				Y_val, batch_size, epochs, lr=0.001, weight_decay=5e-5, save_path="./models", log_file="training_log.txt"):
+				Y_val, batch_size, epochs, lr=0.001, weight_decay=1e-4, save_path="./models", log_file="training_log.txt"):
 	""" Train the LLM/CNN model and write logs to a file """
 	model = model.to(DEVICE)
-	criterion = nn.BCEWithLogitsLoss()  # MultiLabel Classification -> Multi Binary Classification
+	
+	# Replace BCEWithLogitsLoss with StableFocalLoss
+	alpha = torch.tensor([0.42, 0.01, 0.76, 0.64, 0.63, 0.66, 1.0]).to(DEVICE)  # * number of classes (using the EDC paper first, )
+	gamma = 0 # paper value
+	omega = torch.tensor([1.3, 1.0, 0.9, 1.4, 1.2, 1.4, 1.0]).to(DEVICE)  # * number of classes
+	criterion = StableFocalLoss(alpha=alpha, gamma=gamma, omega=omega, reduction='mean')
 	optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
 	
 	os.makedirs(save_path, exist_ok=True)
@@ -493,8 +496,8 @@ def train_model(model, mname, X_train, Y_train, X_test, Y_test, X_val,
 				for sequences, labels in train_loader:
 					sequences, labels = sequences.to(DEVICE), labels.to(DEVICE).float()
 					optimizer.zero_grad()
-					outputs, regularization_loss = model(sequences)		
-					loss = criterion(outputs, labels) + regularization_loss  # Add regularization loss
+					outputs, regularization_loss = model(sequences)
+					loss = criterion(outputs, labels) + regularization_loss  # Include regularization_loss	
 					loss.backward()
 					optimizer.step()
 					train_loss += loss.item()
@@ -508,7 +511,7 @@ def train_model(model, mname, X_train, Y_train, X_test, Y_test, X_val,
 					for sequences, labels in val_loader:
 						sequences, labels = sequences.to(DEVICE), labels.to(DEVICE).float()
 						outputs, regularization_loss = model(sequences)
-						loss = criterion(outputs, labels) + regularization_loss
+						loss = criterion(outputs, labels) + regularization_loss  # Include regularization_loss
 						val_loss += loss.item()
 
 				val_loss /= len(val_loader)
@@ -546,9 +549,9 @@ def train_model(model, mname, X_train, Y_train, X_test, Y_test, X_val,
 				for sequences, labels in test_loader:
 					sequences, labels = sequences.to(DEVICE), labels.to(DEVICE).float()
 					outputs, regularization_loss = model(sequences)
+					loss = criterion(outputs, labels) + regularization_loss  # Include regularization_loss
 					all_labels.append(labels.cpu().numpy())
 					all_outputs.append(torch.sigmoid(outputs).cpu().numpy())
-					loss = criterion(outputs, labels) + regularization_loss  # Compute test loss
 					test_loss += loss.item()
 
 				test_loss /= len(test_loader)
@@ -630,26 +633,22 @@ def test_model(model_path, result_file="result.txt", k_fold=5):
 			log.write(f"Evaluating model over k-folds: {model_file}\n")
 			tqdm.write(f"Evaluating model: {model_file}")
 			
-			#layers = MultiscaleCNNLayers(
-			#	in_channels=64,
-			#	embedding_dim=4,  # For one-hot encoding
-			#	pooling_size=8,
-			#	pooling_stride=8,
-			#	drop_rate_cnn=0.3,
-			#	drop_rate_fc=0.3,
-			#	length=7998, # Length of the input sequence
-			#	nb_classes=7
-			#)
+			layers = MultiscaleCNNLayers(
+				in_channels=64,
+				embedding_dim=4,  # For one-hot encoding
+				pooling_size=8,
+				pooling_stride=8,
+				drop_rate_cnn=0.3,
+				drop_rate_fc=0.3,
+				length=7998, # Length of the input sequence
+				nb_classes=7
+			)
 
-			#model = MultiscaleCNNModel(
-			#	layers=layers,
-			#	num_classes=7,
-			#	sequence_length=15, 
-			#	aggregation_method="learnable_linear"
-			#).to(DEVICE)
-
-			model = LLMClassifier(
-				output_dim=7
+			model = MultiscaleCNNModel(
+				layers=layers,
+				num_classes=7,
+				sequence_length=15, 
+				aggregation_method="learnable_linear"
 			).to(DEVICE)
 
 			model.load_state_dict(torch.load(model_file_path), strict=False)
@@ -720,7 +719,21 @@ def test_model(model_path, result_file="result.txt", k_fold=5):
 					f"MCC: {overall_metrics['MCC'][class_idx]:.5f}")
 	return
 
-import matplotlib.pyplot as plt  # Add for plotting
+#class CombinedModel(nn.Module):
+#	def __init__(self, cnn_output_dim, llm_output_dim, hidden_dim, nb_classes):
+#		super(CombinedModel, self).__init__()
+#		self.fc1 = nn.Linear(cnn_output_dim + llm_output_dim, hidden_dim)
+#		self.fc2 = nn.Linear(hidden_dim, nb_classes)
+#		self.activation = nn.ReLU()
+#		self.dropout = nn.Dropout(0.2)
+
+#	def forward(self, cnn_output, llm_output):
+#		x = torch.cat((cnn_output, llm_output), dim=1)  # Combine CNN and LLM outputs
+#		x = self.fc1(x)
+#		self.activation(x)
+#		x = self.dropout(x)
+#		x = self.fc2(x)
+#		return x
 
 def optimize_thresholds_and_plot(model, test_loader, class_count, save_path="./plots"):
 	"""
@@ -776,10 +789,36 @@ def optimize_thresholds_and_plot(model, test_loader, class_count, save_path="./p
 	return metrics
 
 if __name__ == "__main__":
-	model_path = ["cnn_models_linear"]
-	#test_model(model_path[0], result_file="./tests.txt", k_fold=5)
+	model_path = ["cnn_models_custom_loss"]
+	#test_model(model_path[0], result_file="./cnn_models_custom_loss/cv_result.txt", k_fold=5)
+	#exit()
 
-	## Load data for CNN
+	# Load data for LLM
+	#if os.path.exists("llm_embeddings.pth"):
+	#	print("Loading saved embeddings...")
+	#	data = torch.load("llm_embeddings.pth")
+	#	X_train_llm = data["X_train"]
+	#	Y_train_llm = data["Y_train"]
+	#	X_test_llm = data["X_test"]
+	#	Y_test_llm = data["Y_test"]
+	#	X_val_llm = data["X_val"]
+	#	Y_val_llm = data["Y_val"]
+	#else:
+	#	print("Generating embeddings...")
+	#	X_train_llm, X_test_llm, X_val_llm, Y_train_llm, Y_test_llm, Y_val_llm = preprocess_data_raw_with_embeddings(
+	#		left=4000,
+	#		right=4000
+	#	)
+	#	# Save the embeddings for future use
+	#	torch.save({
+	#		"X_train": X_train_llm,
+	#		"Y_train": Y_train_llm,
+	#		"X_test": X_test_llm,
+	#		"Y_test": Y_test_llm,
+	#		"X_val": X_val_llm,
+	#		"Y_val": Y_val_llm
+	#	}, "llm_embeddings.pth")
+
 	if os.path.exists("cnn_embeddings.pth"):
 		print("Loading saved CNN embeddings...")
 		data = torch.load("cnn_embeddings.pth")
@@ -809,7 +848,7 @@ if __name__ == "__main__":
 	print(X_test_cnn[0].shape, Y_test_cnn[0].shape)
 	print(X_val_cnn[0].shape, Y_val_cnn[0].shape)
 
-	## Initialize CNN model
+	# Initialize CNN model
 	cnn_layers = MultiscaleCNNLayers(
 		in_channels=64,
 		embedding_dim=4,  # For one-hot encoding
@@ -829,9 +868,10 @@ if __name__ == "__main__":
 		aggregation_method="learnable_linear"
 	).to(DEVICE)
 
+	# Train CNN model with mean pooling
 	train_model(
 		model=cnn_model_linear,
-		mname="CNN_Linear",
+		mname="CNN_Linear_CustomLoss",
 		X_train=X_train_cnn,
 		Y_train=Y_train_cnn,
 		X_test=X_test_cnn,
@@ -840,85 +880,7 @@ if __name__ == "__main__":
 		Y_val=Y_val_cnn,
 		batch_size=32,
 		epochs=CNN_EPOCHS,
-		save_path="./cnn_models_linear",
-		log_file="cnn_training_log_linear.txt"
+		save_path="./cnn_models_linear_custom_loss",
+		log_file="cnn_training_log_linear_custom_loss.txt"
 	)
-
-	## Initialize LLM model
-	#llm_model = LLMClassifier(
-	#	output_dim=7
-	#).to(DEVICE)
-
-	##print(llm_model)
-	## Train LLM model
-	#train_model(
-	#	model=llm_model,
-	#	mname="LLM",
-	#	X_train=X_train_llm,
-	#	Y_train=Y_train_llm,
-	#	X_test=X_test_llm,
-	#	Y_test=Y_test_llm,
-	#	X_val=X_val_llm,
-	#	Y_val=Y_val_llm,
-	#	batch_size=32,
-	#	epochs=LLM_EPOCHS,
-	#	lr=1e-5,
-	#	save_path="./llm_model",
-	#	log_file="llm_training_log.txt"
-	#)
-
-	#### Initialize Ensemble model
-	###ensemble_model = EnsembleModel(
-	###	llm_model=llm_model,
-	###	cnn_model=cnn_model,
-	###	llm_output_dim7,  # Output dimension of LLM
-	###	cnn_output_dim=7,    # Output dimension of CNN
-	###	nb_classes=6
-	###).to(DEVICE)
-
-	### Train Ensemble model (implement a new function for this)
-	### train_ensemble_model(...)
-
-	### Initialize CNN and LLM models
-	##cnn_layers = MultiscaleCNNLayers(
-	##	in_channels=64,
-	##	embedding_dim=4,  # For one-hot encoding
-	##	pooling_size=8,
-	##	pooling_stride=8,
-	##	drop_rate_cnn=0.3,
-	##	drop_rate_fc=0.3,
-	##	length=7998,  # Length of the input sequence
-	##	nb_classes=7
-	##)
-
-	##cnn_model = MultiscaleCNNModel(
-	##	layers=cnn_layers,
-	##	num_classes=7,
-	##	sequence_length=15,
-	##	aggregation_method="mean"
-	##).to(DEVICE)
-
-	##llm_model = LLMClassifier(output_dim=7).to(DEVICE)
-
-	### Initialize combined model
-	##combined_model = CombinedModel(
-	##	cnn_output_dim=7,  # Output dimension of CNN
-	##	llm_output_dim=7,  # Output dimension of LLM
-	##	hidden_dim=128,
-	##	nb_classes=7
-	##).to(DEVICE)
-
-	### Train CNN and LLM models separately (if not already trained)
-	### ...existing code for training CNN and LLM...
-
-	### Combine CNN and LLM outputs for prediction
-	##train_model(
-	##	model=combined_model,
-	##	mname="Combined",
-	##	X_train=(X_train_cnn, X_train_llm),
-	##	Y_train=Y_train_cnn,  # Assuming same labels for CNN and LLM
-	##	X_test=(X_test_cnn, X_test_llm),
-	##	Y_test=Y_test_cnn,
-	##	X_val=(X_val_cnn, X_val_llm),
-	##	Y_val=Y_val_cnn,
-	##	batch_size=32,	#	epochs=15,	#	save_path="./combined_models",	#	log_file="combined_training_log.txt"	#)	# Optimize thresholds and plot metrics for each fold	for fold in range(len(X_test_cnn)):		print(f"Optimizing thresholds for fold {fold + 1}")
+	

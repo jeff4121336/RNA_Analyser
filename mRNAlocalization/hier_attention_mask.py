@@ -33,7 +33,7 @@ class AttentionMask(nn.Module):
 		self.attmod = attmod 
 		self.sharpBeta = sharpBeta 
 
-		self.W1 = nn.Parameter(torch.Tensor(hidden, da)) # weight for (hidden, da)
+		self.W1 = nn.Parameter(torch.Tensor(hidden , da)) # weight for (hidden, da)
 		self.W2 = nn.Parameter(torch.Tensor(da, r)) # weight for (da, r)
 		
 		# initialize weights
@@ -46,7 +46,7 @@ class AttentionMask(nn.Module):
 		H1 = H[:, :, :-1]  # (batch_size, n, hidden) <-> input
 		attention_mask = H[:, :, -1]  # (batch_size, n, 1) <-> attention_mask
 
-		H_t = self.activation(torch.matmul(H1, self.W1))  # (batch_size, n, da)
+		H_t = self.activation(torch.matmul(H, self.W1))  # (batch_size, n, da)
 		temp = torch.matmul(H_t, self.W2).permute(0, 2, 1)  # (batch_size, r, n)
 
 		# mask add on temp for softmax, for padding regions
