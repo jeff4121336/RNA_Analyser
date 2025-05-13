@@ -189,31 +189,6 @@ class MultiscaleCNNModel(nn.Module):
 
 		return x, x1_regulatization_loss + x2_regulatization_loss + x3_regulatization_loss
 	
-#class EnsembleModel(nn.Module):
-#	def __init__(self, llm_model, cnn_model, llm_output_dim, cnn_output_dim, hidden_dim, nb_classes):
-#		super(EnsembleModel, self).__init__()
-#		self.llm_model = llm_model
-#		self.cnn_model = cnn_model
-
-#		# Fully connected NN for combining LLM and CNN outputs and length compoent in second layer
-#		self.fc1 = nn.Linear(llm_output_dim + cnn_output_dim, (llm_output_dim + cnn_output_dim)/ 2 + 1)
-#		self.fc2 = nn.Linear((llm_output_dim + cnn_output_dim)/ 2 + 1, nb_classes)
-#		self.activation = nn.ReLU()
-#		self.dropout = nn.Dropout(0.2)
-	
-#	def forward(self, x):
-#		llm_output = self.llm_model(x) # LLM output
-#		cnn_output = self.cnn_model(x) # CNN output
-
-#		x = torch.cat((llm_output, cnn_output), dim=1) # Combine LLM and CNN outputs
-
-#		x = self.fc1(x)
-#		self.activation(x)
-#		x = self.dropout(x)
-#		x = self.fc2(x)
-
-#		return x
-
 class GeneDataset(Dataset):
 	def __init__(self, sequences, labels):
 		self.sequences = sequences

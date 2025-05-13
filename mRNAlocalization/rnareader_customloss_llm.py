@@ -85,7 +85,6 @@ class EarlyStopper:
 				return True
 		return False
 
-# Load mRNA-FM model (LLM)
 class RNA_FM:
 	def __init__(self):
 		embedding_model, alphabet = fm.pretrained.rna_fm_t12()
@@ -125,23 +124,6 @@ class RNA_FM:
 			
 		# Concatenate all embeddings along the batch dimension
 		return torch.cat(all_embeddings, dim=0)  # Shape: [batch_size, seq_len, 640]
-			
-class LLMClassifier(nn.Module):
-	def __init__(self, output_dim):
-		super(LLMClassifier, self).__init__()
-		self.output_dim = output_dim
-
-		self.fc1 = nn.Linear(640, 64)
-		self.fc2 = nn.Linear(64, output_dim)
-		self.activation = nn.GELU()
-		self.dropout = nn.Dropout(0.1)
-
-	def forward(self, x):
-		x = self.fc1(x)
-		x = self.activation(x)
-		x = self.dropout(x)
-		x = self.fc2(x)
-		return x
 
 class MultiscaleCNNLayers(nn.Module):
 	def __init__(self, in_channels, embedding_dim, pooling_size, pooling_stride, drop_rate_cnn, drop_rate_fc, length, nb_classes):
@@ -150,7 +132,6 @@ class MultiscaleCNNLayers(nn.Module):
 		self.bn1 = nn.BatchNorm1d(in_channels)
 		self.bn2 = nn.BatchNorm1d(in_channels // 2)
 
-		# Explicit padding calculation: (kernel_size - 1) // 2
 		self.conv1_1 = nn.Conv1d(in_channels=embedding_dim, out_channels=in_channels, kernel_size=9, padding=4)
 		self.conv1_2 = nn.Conv1d(in_channels=in_channels, out_channels=in_channels // 2, kernel_size=9, padding=4)
 		self.conv2_1 = nn.Conv1d(in_channels=embedding_dim, out_channels=in_channels, kernel_size=20, padding=10)
@@ -204,6 +185,40 @@ class MultiscaleCNNModel(nn.Module):
 
 		return x, x1_regulatization_loss + x2_regulatization_loss + x3_regulatization_loss
 
+class CombinedModel(nn.Module):
+	def __init__(self, cnn_output_dim, llm_output_dim, hidden_dim, nb_classes):
+		super(CombinedModel, self).__init__()
+		self.nb_classes = nb_classes
+
+		self.parallel_layers = nn.ModuleList([
+			nn.Sequential(
+				nn.Linear(2 + llm_output_dim, hidden_dim),
+				nn.ReLU(),
+				nn.Dropout(0.2),
+				nn.Linear(hidden_dim, 1)  # Output 1 label per layer
+			)
+			for _ in range(nb_classes)
+		])
+
+	def forward(self, cnn_output, llm_output):
+		# cnn - [batch_size, cnn_output_dim] / llm - [batch_size, 1, llm_output_dim]
+		llm_output = llm_output.squeeze(1)  # Remove the second dimension if present
+
+		
+		outputs = []
+		for i, layer in enumerate(self.parallel_layers):
+			specific_label = cnn_output[:, i].unsqueeze(1)  # Shape: [batch_size, 1]
+			last_label = cnn_output[:, -1].unsqueeze(1)  # Shape: [batch_size, 1]
+
+			x = torch.cat((specific_label, last_label, llm_output), dim=1)  # Shape: [batch_size, 2 + llm_output_dim]
+
+			outputs.append(layer(x))  # Shape: [batch_size, 1]
+
+		# Concatenate outputs from all parallel layers
+		outputs = torch.cat(outputs, dim=1)  # Shape: [batch_size, nb_classes]
+
+		return outputs
+	
 class GeneDataset(Dataset):
 	def __init__(self, data, labels):
 		self.data = data
@@ -626,7 +641,6 @@ def test_model(path1, path2, X_test, Y_test, k_fold, batch_size=32, thresholds=N
 			pooling_size=8,
 			pooling_stride=8,
 			drop_rate_cnn=0.3,
-
 			drop_rate_fc=0.3,
 			length=7998,  # Length of the input sequence
 			nb_classes=7
@@ -721,40 +735,6 @@ def test_model(path1, path2, X_test, Y_test, k_fold, batch_size=32, thresholds=N
 
 	return
 
-class CombinedModel(nn.Module):
-	def __init__(self, cnn_output_dim, llm_output_dim, hidden_dim, nb_classes):
-		super(CombinedModel, self).__init__()
-		self.nb_classes = nb_classes
-
-		self.parallel_layers = nn.ModuleList([
-			nn.Sequential(
-				nn.Linear(2 + llm_output_dim, hidden_dim),
-				nn.ReLU(),
-				nn.Dropout(0.2),
-				nn.Linear(hidden_dim, 1)  # Output 1 label per layer
-			)
-			for _ in range(nb_classes)
-		])
-
-	def forward(self, cnn_output, llm_output):
-		# cnn - [batch_size, cnn_output_dim] / llm - [batch_size, 1, llm_output_dim]
-		llm_output = llm_output.squeeze(1)  # Remove the second dimension if present
-
-		
-		outputs = []
-		for i, layer in enumerate(self.parallel_layers):
-			specific_label = cnn_output[:, i].unsqueeze(1)  # Shape: [batch_size, 1]
-			last_label = cnn_output[:, -1].unsqueeze(1)  # Shape: [batch_size, 1]
-
-			x = torch.cat((specific_label, last_label, llm_output), dim=1)  # Shape: [batch_size, 2 + llm_output_dim]
-
-			outputs.append(layer(x))  # Shape: [batch_size, 1]
-
-		# Concatenate outputs from all parallel layers
-		outputs = torch.cat(outputs, dim=1)  # Shape: [batch_size, nb_classes]
-
-		return outputs
-
 def optimize_thresholds_and_plot(model, test_loader, class_count, save_path="./plots"):
 	"""
 	Optimize thresholds for each class and plot MCC, Precision, and Recall vs thresholds.
@@ -810,56 +790,6 @@ def optimize_thresholds_and_plot(model, test_loader, class_count, save_path="./p
 
 if __name__ == "__main__":
 
-	#if os.path.exists("./llm_cnn_emb_2.pth"):
-	#	data = torch.load("./llm_cnn_emb_2.pth")
-	#	X_train = data["X_train"]
-	#	Y_train = data["Y_train"]
-	#	X_test = data["X_test"]
-	#	Y_test = data["Y_test"]
-	#	X_val = data["X_val"]
-	#	Y_val = data["Y_val"]
-	#else:
-	#	X_train, X_test, X_val, Y_train, Y_test, Y_val = preprocess_data(
-	#		left=4000,
-	#		right=4000,
-	#		k_fold=8
-	#	)	
-	#	# Save the embeddings for future use
-	#	torch.save({
-	#		"X_train": X_train,
-	#		"Y_train": Y_train,
-	#		"X_test": X_test,
-	#		"Y_test": Y_test,
-	#		"X_val": X_val,
-	#		"Y_val": Y_val
-	#	}, "llm_cnn_emb_2.pth")
-	
-	## Apply CNN model here, load the best one
-	#LLM_CNN = CombinedModel(
-	#	cnn_output_dim=7,
-	#	llm_output_dim=640,
-	#	hidden_dim=32,
-	#	nb_classes=7
-	#)
-
-	## Train LLM model
-	#train_model(
-	#	model=LLM_CNN,
-	#	mname="LLM_CNN_model",
-	#	X_train=X_train,
-	#	Y_train=Y_train,
-	#	X_test=X_test,
-	#	Y_test=Y_test,
-	#	X_val=X_val,
-	#	Y_val=Y_val,
-	#	batch_size=32,
-	#	epochs=EPOCHS,
-	#	save_path="./LLM_CNN_model",
-	#	log_file="LLM_CNN_model.txt",
-	#	load_CNN_model_path="./cnn_models_linear_custom_loss/CNN_Linear_CustomLoss_model_fold8.pth"  # Load the best CNN model
-	#)
-	
-
 	# Test the model
 	if os.path.exists("./llm_cnn_test_data.pth"):
 		data = torch.load("./llm_cnn_test_data.pth")
@@ -885,7 +815,7 @@ if __name__ == "__main__":
 		path2="./cnn_models_linear_custom_loss/CNN_Linear_CustomLoss_model_fold8.pth",
 		X_test=X_test,
 		Y_test=Y_test,
-		k_fold=8,
+		k_fold=5,
 		batch_size=32,
 		#thresholds=None,
 		thresholds=[0.65, 0.94, 0.21, 0.56, 0.34, 0.29, 0.14],
